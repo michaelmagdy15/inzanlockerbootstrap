@@ -3,3 +3,4 @@ node_modules/
 certs/*.pem
 certs/*.key
 *.log
+lockers.db

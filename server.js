@@ -2,12 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const mqtt = require('mqtt');
 const crypto = require('crypto');
-const db = require('./database');
+const { db, dbReady } = require('./database');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const RECEPTION_PIN = process.env.RECEPTION_PIN || '1234';
 
 // Enable trust proxy for Cloud Run HTTPS resolution
 app.enable('trust proxy');
@@ -19,35 +17,69 @@ app.use(express.json());
 // Serve static frontend files
 app.use(express.static('public'));
 
-// MQTT Settings
-const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://192.168.68.2';
-const MQTT_PORT = parseInt(process.env.MQTT_PORT || '1883', 10);
-const MQTT_USER = process.env.MQTT_USER || 'mqtt';
-const MQTT_PASSWORD = process.env.MQTT_PASSWORD || '';
-const MQTT_TOPIC_TEMPLATE = process.env.MQTT_TOPIC_TEMPLATE || 'gym/lockers/{id}/command';
-
-const mqttOptions = {
-  port: MQTT_PORT,
-  username: MQTT_USER,
-  password: MQTT_PASSWORD,
-  reconnectPeriod: 5000,
-  connectTimeout: 30 * 1000,
+// Dynamic System Configuration Object
+const config = {
+  PORT: process.env.PORT || 3000,
+  RECEPTION_PIN: process.env.RECEPTION_PIN || '1234',
+  MQTT_BROKER: process.env.MQTT_BROKER || 'mqtt://192.168.68.2',
+  MQTT_PORT: parseInt(process.env.MQTT_PORT || '1883', 10),
+  MQTT_USER: process.env.MQTT_USER || 'mqtt',
+  MQTT_PASSWORD: process.env.MQTT_PASSWORD || '',
+  MQTT_TOPIC_TEMPLATE: process.env.MQTT_TOPIC_TEMPLATE || 'gym/lockers/{id}/command',
+  BASE_URL: process.env.BASE_URL || ''
 };
 
-console.log(`Connecting to MQTT Broker at ${MQTT_BROKER}:${MQTT_PORT}...`);
-const mqttClient = mqtt.connect(MQTT_BROKER, mqttOptions);
+// Load configuration from database
+function loadSettingsFromDb() {
+  return new Promise((resolve) => {
+    db.all('SELECT key, value FROM settings', [], (err, rows) => {
+      if (!err && rows) {
+        rows.forEach((row) => {
+          if (row.key === 'MQTT_PORT') {
+            config.MQTT_PORT = parseInt(row.value, 10);
+          } else {
+            config[row.key] = row.value;
+          }
+        });
+      }
+      resolve();
+    });
+  });
+}
 
-mqttClient.on('connect', () => {
-  console.log('Successfully connected to MQTT Broker.');
-});
-mqttClient.on('error', (err) => {
-  console.error('MQTT Client Error:', err.message);
-});
+// MQTT Client Management
+let mqttClient = null;
+
+function connectMQTT() {
+  if (mqttClient) {
+    console.log('Disconnecting existing MQTT Client...');
+    mqttClient.end();
+    mqttClient = null;
+  }
+
+  const mqttOptions = {
+    port: config.MQTT_PORT,
+    username: config.MQTT_USER,
+    password: config.MQTT_PASSWORD,
+    reconnectPeriod: 5000,
+    connectTimeout: 30 * 1000,
+  };
+
+  console.log(`Connecting to MQTT Broker at ${config.MQTT_BROKER}:${config.MQTT_PORT}...`);
+  mqttClient = mqtt.connect(config.MQTT_BROKER, mqttOptions);
+
+  mqttClient.on('connect', () => {
+    console.log('Successfully connected to MQTT Broker.');
+  });
+  mqttClient.on('error', (err) => {
+    console.error('MQTT Client Error:', err.message);
+  });
+}
 
 // Middleware: Check Reception PIN authorization for admin/console actions
 function authorizeReception(req, res, next) {
   const pinHeader = req.headers['x-reception-pin'];
-  if (!pinHeader || pinHeader !== RECEPTION_PIN) {
+  if (!pinHeader || pinHeader !== config.RECEPTION_PIN) {
     return res.status(401).json({ success: false, message: 'Unauthorized. PIN missing or incorrect.' });
   }
   next();
@@ -208,7 +240,7 @@ app.post('/api/unlock-locker', (req, res) => {
           console.warn(`[ANOMALY ALERT] Locker #${targetLockerId} flagged for excessive unlock attempts.`);
         }
 
-        if (!mqttClient.connected) {
+        if (!mqttClient || !mqttClient.connected) {
           await logAccess(targetLockerId, 'unlock', 'failed_no_broker', ip, isFlagged, flagReason);
           return res.status(503).json({
             success: false,
@@ -217,7 +249,7 @@ app.post('/api/unlock-locker', (req, res) => {
         }
 
         // Generate MQTT command parameters
-        const topic = MQTT_TOPIC_TEMPLATE.replace('{id}', targetLockerId.toString());
+        const topic = config.MQTT_TOPIC_TEMPLATE.replace('{id}', targetLockerId.toString());
         const payload = JSON.stringify({
           action: 'unlock',
           id: targetLockerId,
@@ -303,7 +335,7 @@ app.get('/api/generate-pass', async (req, res) => {
       return res.status(403).send('Forbidden. Access token is invalid or expired.');
     }
 
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const baseUrl = config.BASE_URL || `${req.protocol}://${req.get('host')}`;
     const unlockUrl = `${baseUrl}/?locker=${targetLockerId}&token=${token}`;
 
     const wwdrPath = process.env.APPLE_WWDR_CERT_PATH || 'certs/wwdr.pem';
@@ -400,6 +432,65 @@ app.get('/api/access-logs', authorizeReception, (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Locker Middleware Server running on port ${PORT}`);
+// GET /api/reception/config (Fetch settings)
+app.get('/api/reception/config', authorizeReception, (req, res) => {
+  const safeConfig = { ...config };
+  if (safeConfig.MQTT_PASSWORD) {
+    safeConfig.MQTT_PASSWORD = '••••••••';
+  }
+  return res.json({ success: true, config: safeConfig });
+});
+
+// POST /api/reception/config (Update settings)
+app.post('/api/reception/config', authorizeReception, async (req, res) => {
+  const newSettings = req.body;
+  const allowedKeys = ['MQTT_BROKER', 'MQTT_PORT', 'MQTT_USER', 'MQTT_PASSWORD', 'BASE_URL', 'RECEPTION_PIN', 'MQTT_TOPIC_TEMPLATE'];
+  
+  try {
+    const dbPromises = [];
+    
+    for (const key of allowedKeys) {
+      if (newSettings[key] !== undefined) {
+        let value = newSettings[key];
+        
+        // If password is sent as mask, don't overwrite
+        if (key === 'MQTT_PASSWORD' && value === '••••••••') {
+          continue;
+        }
+
+        dbPromises.push(new Promise((resolve, reject) => {
+          db.run(
+            'REPLACE INTO settings (key, value) VALUES (?, ?)',
+            [key, value],
+            (err) => {
+              if (err) reject(err);
+              else resolve();
+            }
+          );
+        }));
+      }
+    }
+    
+    await Promise.all(dbPromises);
+    
+    // Reload settings
+    await loadSettingsFromDb();
+    
+    // Reconnect MQTT client
+    connectMQTT();
+    
+    return res.json({ success: true, message: 'System configuration updated and reloaded successfully.' });
+  } catch (err) {
+    console.error('Failed to update config in database:', err);
+    return res.status(500).json({ success: false, message: `Failed to save configuration: ${err.message}` });
+  }
+});
+
+dbReady.then(async () => {
+  await loadSettingsFromDb();
+  connectMQTT();
+
+  app.listen(config.PORT, () => {
+    console.log(`Locker Middleware Server running on port ${config.PORT}`);
+  });
 });

@@ -2,6 +2,12 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const dbPath = path.join(__dirname, 'lockers.db');
+
+let resolveDbReady;
+const dbReady = new Promise((resolve) => {
+  resolveDbReady = resolve;
+});
+
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening SQLite database:', err.message);
@@ -41,6 +47,17 @@ function initializeDatabase() {
     `, (err) => {
       if (err) console.error('Error creating access_logs table:', err.message);
     });
+
+    // 3. Create Settings Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    `, (err) => {
+      if (err) console.error('Error creating settings table:', err.message);
+      resolveDbReady(); // Resolve once initialization is complete
+    });
   });
 }
 
@@ -68,4 +85,4 @@ function seedLockers() {
   });
 }
 
-module.exports = db;
+module.exports = { db, dbReady };
