@@ -1,91 +1,110 @@
 # Inzan Locker Bootstrap Middleware
 
-This middleware application bridges user mobile devices to local gym lockers using standard HTTP requests and publishes MQTT commands to a local broker. It features a responsive Progressive Web App (PWA) interface, Apple Wallet (.pkpass) access capabilities, connection pooling, input validation, and connection error resiliency.
+This middleware application bridges user mobile devices to local physical gym lockers at **Inzan Athletics** using standard HTTPS requests on cellular data (LTE/5G), publishing commands down to a local MQTT broker. It features a zero-login Progressive Web App (PWA) client interface, an administrative reception desk dashboard, dynamic runtime configuration persistence, and automatic 12-hour ticket auto-releases.
 
 ---
 
-## Security Mitigation Guidelines
+## 🚀 Core Features
 
-Operating IoT access systems on unencrypted local networks carries security risks (e.g., man-in-the-middle attacks, credential sniffing). Implement these recommendations to secure your infrastructure:
-
-### 1. Secure MQTT Traffic (TLS/SSL)
-By default, standard MQTT on port `1883` sends commands and credentials in plain text. If an attacker performs network sniffing on this port, they can capture the username and password.
-- **Action:** Configure your Docker MQTT broker to listen on port `8883` with SSL/TLS enabled.
-- **Action:** Generate server-side SSL certificates (e.g., using Let's Encrypt or a local CA trust).
-- **Action:** Update your `.env` configuration to use `mqtts://` protocol and port `8883`.
-
-### 2. Protect Docker Container Secrets
-If attackers gain administrative access to the Docker host, they can view environment variables containing passwords.
-- **Action:** Never hardcode passwords in the `Dockerfile`.
-- **Action:** Avoid passing sensitive values directly via the command line or environment configurations. Instead, load secrets securely using a secret manager or by mounting read-only volume secrets (e.g., Docker Secrets) into the container.
-- **Action:** Enforce strict access control lists (ACLs) on the MQTT broker configuration, permitting only specific client IDs to publish to command topics.
-
----
-
-## Deployment Instructions
-
-You can host this middleware on a local server (e.g. Windows PC, macOS machine, or Raspberry Pi) connected to the local Wi-Fi.
-
-### Option A: Local Process Execution
-1. Install Node.js (v18 or higher) on the target machine.
-2. Clone this repository into a folder.
-3. Install dependencies:
-   ```bash
-   npm install --only=production
-   ```
-4. Copy `.env.example` to `.env` and fill in the required variables (specifically your broker IP `192.168.68.2`, port `1883`, username, password, and base URL).
-5. Run the application:
-   ```bash
-   npm start
-   ```
-
-### Option B: Docker Container Execution
-1. Ensure Docker is installed on the hosting server.
-2. Build the Docker image:
-   ```bash
-   docker build -t inzan-locker-middleware .
-   ```
-3. Run the container, passing the required environment variables:
-   ```bash
-   docker run -d \
-     -p 3000:3000 \
-     --name locker-middleware \
-     -e MQTT_BROKER="mqtt://192.168.68.2" \
-     -e MQTT_PORT="1883" \
-     -e MQTT_USER="mqtt" \
-     -e MQTT_PASSWORD="your_broker_password" \
-     -e BASE_URL="http://192.168.68.2:3000" \
-     inzan-locker-middleware
-   ```
+1.  **Zero-Login Mobile PWA:**
+    *   No member passwords or usernames required. 
+    *   Automatic token credential caching in the phone's `localStorage` on initial scan.
+    *   One-tap locker activation with dynamic ripple animations and haptic feedback.
+2.  **In-App QR Code Scanner:**
+    *   Integrated `html5-qrcode` camera scanner allowing members to scan new locker tickets on the spot.
+    *   *High-Contrast Decoding:* QR codes generated on the reception dashboard use a dark-slate-on-white layout with a solid white viewport border to guarantee instant scanning on iOS and Android devices.
+3.  **Automatic 12-Hour Expiry:**
+    *   Server-side validation checks database allocation timestamps. Any locker token older than 12 hours is automatically released, and access is invalidated to maintain high security.
+4.  **System Settings Panel (Reception Dashboard):**
+    *   Administrative console (protected by a dashboard PIN) allows staff to configure configurations at runtime:
+        -   MQTT Broker URL & Port
+        -   MQTT Username & Password
+        -   MQTT Command Topic Template
+        -   Base Web App URL
+        -   Desk Access PIN
+    *   *Dynamic Hot-Reloading:* Configuration updates are written to an SQLite `settings` table and re-instantiated instantly, closing the old MQTT client socket and connecting to the new broker without requiring container restarts.
 
 ---
 
-## Verification & Testing Checklist
+## 📦 System Architecture
 
-Use this step-by-step checklist to validate the system end-to-end:
+```
+[Smartphone (LTE/5G)] ---> [Google Cloud Run (Public Web App)]
+                                      |
+                                      +--- (Reads/Writes to SQLite) ---> [lockers.db]
+                                      |
+                                      v (MQTT TCP Connection)
+                            [Cloudflare Secure Edge]
+                                      |
+                                      v (Outbound Secure Tunnel)
+                          [cloudflared (macOS Broker Host)]
+                                      |
+                                      v (Local Broker TCP)
+                         [Local MQTT Broker (192.168.68.2)]
+                                      |
+                                      v (Locker Pop!)
+                             [Physical Lockers]
+```
 
-### Step 1: Validate Backend to Broker Connectivity
-1. Start the middleware server.
-2. Check the console logs. Verify that the server output displays:
-   `Successfully connected to MQTT Broker.`
-3. If it says `MQTT Connection closed. Reconnecting...`, verify network routing between your server and the broker host (`192.168.68.2`), and double-check credentials.
+---
 
-### Step 2: Validate API Dispatch
-1. Using an API testing client (e.g., Postman) or a `curl` command, send a mock POST request:
-   ```bash
-   curl -X POST http://localhost:3000/api/unlock-locker \
-     -H "Content-Type: application/json" \
-     -d '{"lockerId": 14}'
-   ```
-2. Verify that the response returns `{"success": true}`.
-3. Review backend logs to confirm that the command was successfully published to the topic `gym/lockers/14/command`.
+## 🛠️ Deployment Instructions
 
-### Step 3: Validate Mobile Web Interface
-1. Navigate to the server URL on a mobile device or browser with a locker query parameter, e.g.:
-   `http://<SERVER_IP>:3000/?locker=14`
-2. Confirm that the page loads with a digital pass styling, displaying "LOCKER NUMBER #14" and a blue "Tap to Unlock Locker #14" button.
-3. Tap the button. Verify:
-   - Button shows "Transmitting Command..." and spinning indicator.
-   - Status badge changes to "DISPATCHING".
-   - Upon successful server response, the badge changes to green "UNLOCKED", a success notification displays, and the phone vibrates (if supported).
-   - After 5 seconds, the status returns to "LOCKED".
+### 1. Local Process Execution
+1.  Ensure **Node.js (v18 or higher)** is installed on the target machine.
+2.  Clone the repository and install production dependencies:
+    ```bash
+    npm install --only=production
+    ```
+3.  Copy `.env.example` to `.env` and fill in initial values.
+4.  Launch the hot-reload watcher server:
+    ```bash
+    npm run dev
+    ```
+5.  Access the administrative panel at `http://localhost:3000/reception.html` (default PIN is `1234`). Click the **⚙️ System Settings** button to adjust broker credentials.
+
+### 2. Google Cloud Run Deployment
+Cloud Run hosts the Express backend container publicly, allowing mobile users to access it on 5G without gym Wi-Fi connections:
+1.  **Build and Publish Image:**
+    ```bash
+    gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/inzan-locker-middleware
+    ```
+2.  **Deploy Container Service:**
+    ```bash
+    gcloud run deploy inzan-locker-middleware \
+      --image gcr.io/YOUR_PROJECT_ID/inzan-locker-middleware \
+      --platform managed \
+      --allow-unauthenticated \
+      --port 3000
+    ```
+3.  *Note: Because Cloud Run filesystems are ephemeral, dynamic database settings saved to SQLite will reset during container scale-downs. For production deployments, specify your environment variables directly in your Cloud Run service configuration (e.g. `MQTT_BROKER`, `MQTT_PORT`, `BASE_URL`, `RECEPTION_PIN`).*
+
+### 3. Setup local Cloudflare Tunnel
+Install `cloudflared` on the local machine hosting your MQTT broker (`192.168.68.2`) to bridge connection requests securely without opening incoming firewall ports:
+1.  **Install client:** `brew install cloudflare/cloudflare/cloudflared` (macOS)
+2.  **Authenticate:** `cloudflared tunnel login`
+3.  **Create tunnel:** `cloudflared tunnel create gym-mqtt-bridge`
+4.  **Route tunnel DNS:** `cloudflared tunnel route dns gym-mqtt-bridge broker.inzanathletics.com`
+5.  **Configure ingress (`~/.cloudflare/config.yml`):**
+    ```yaml
+    tunnel: YOUR_TUNNEL_UUID
+    credentials-file: /Users/YOUR_USER/.cloudflared/YOUR_TUNNEL_UUID.json
+
+    ingress:
+      - hostname: broker.inzanathletics.com
+        service: tcp://127.0.0.1:1883
+      - service: http_status:404
+    ```
+6.  **Run tunnel agent:** `cloudflared tunnel run gym-mqtt-bridge`
+
+---
+
+## 🔐 Administrative Credentials
+
+-   **Reception Desk URL:** `/reception.html`
+-   **Default Authorization PIN:** `1234`
+-   *Once authenticated, PIN code and Broker settings can be managed directly via the dashboard System Settings panel.*
+
+---
+
+*For detailed infrastructure build instructions and troubleshooting, reference [CLOUD_DEPLOYMENT.md](./CLOUD_DEPLOYMENT.md) and [MEMORY.md](./MEMORY.md).*
