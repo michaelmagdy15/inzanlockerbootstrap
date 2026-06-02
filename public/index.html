@@ -350,8 +350,7 @@
           state.html5QrcodeScanner.start(
             { facingMode: "environment" }, 
             {
-              fps: 10,
-              qrbox: { width: 200, height: 200 }
+              fps: 15 // Increased frame rate for faster detection
             },
             onScanSuccess,
             onScanFailure
