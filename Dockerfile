@@ -15,6 +15,7 @@ RUN npm ci --only=production
 
 # Copy application source files
 COPY server.js ./
+COPY database.js ./
 COPY public/ ./public/
 
 # Expose default port
