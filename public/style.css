@@ -722,3 +722,338 @@ body::before {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
+/* Administrative Background overrides */
+.admin-body {
+  align-items: flex-start;
+  padding: 32px 16px;
+}
+
+.admin-container {
+  max-width: 900px;
+}
+
+.reception-main {
+  width: 100%;
+}
+
+.reception-card {
+  padding: 32px;
+}
+
+.reception-header {
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.reception-header h2 {
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff, #9ca3af);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+}
+
+.reception-header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* 30 Locker Grid Layout */
+.locker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.locker-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* State indicators */
+.locker-item.available {
+  border-color: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.02);
+}
+
+.locker-item.available:hover {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+}
+
+.locker-item.occupied {
+  border-color: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.02);
+}
+
+.locker-grid-no {
+  font-size: 24px;
+  font-weight: 800;
+  text-align: left;
+  letter-spacing: -0.5px;
+}
+
+.locker-item.available .locker-grid-no {
+  color: #a7f3d0;
+}
+
+.locker-item.occupied .locker-grid-no {
+  color: #fca5a5;
+}
+
+.locker-grid-status {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-align: left;
+}
+
+.locker-item.available .locker-grid-status {
+  color: var(--accent-green);
+}
+
+.locker-item.occupied .locker-grid-status {
+  color: var(--accent-red);
+}
+
+.locker-grid-action {
+  margin-top: 4px;
+}
+
+.grid-action-btn {
+  width: 100%;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.grid-action-btn.assign {
+  background: var(--accent-cyan);
+  color: #000000;
+}
+
+.grid-action-btn.assign:hover {
+  background: #33f3ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.grid-action-group {
+  display: flex;
+  gap: 8px;
+}
+
+.grid-action-btn.release {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--accent-red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  flex: 1;
+}
+
+.grid-action-btn.release:hover {
+  background: var(--accent-red);
+  color: #ffffff;
+}
+
+.grid-action-btn.view-pass {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  flex: 1;
+}
+
+.grid-action-btn.view-pass:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal Overlay & Card Popup */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  padding: 16px;
+  animation: fade-in 0.3s ease;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 400px;
+  padding: 28px;
+  animation: slide-up 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent-cyan);
+}
+
+.close-modal-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.close-modal-btn:hover {
+  color: #ffffff;
+}
+
+.modal-instruction {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+/* QR Code Container inside modal */
+.qr-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.qr-placeholder {
+  width: 200px;
+  height: 200px;
+  background: #141622;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
+
+.qr-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+.qr-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.modal-pass-details {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  padding: 14px 18px;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+/* PIN overlay card styling */
+.pin-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.pin-card h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.pin-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.pin-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#reception-pin {
+  height: 48px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0 16px;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: 4px;
+  outline: none;
+}
+
+#reception-pin:focus {
+  border-color: var(--accent-blue);
+}
+
+/* Client Error card styling */
+.error-card {
+  padding: 40px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.error-icon {
+  font-size: 40px;
+}
+
+.error-card h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-orange);
+}
+
+.error-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+

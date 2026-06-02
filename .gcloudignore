@@ -1,0 +1,11 @@
+# Exclude local node modules
+node_modules/
+.git/
+.gitignore
+
+# Exclude local database and keys
+lockers.db
+certs/
+.env
+*.log
+npm-debug.log

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inzan Athletics - Reception Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body">
+  <div class="app-container admin-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-container">
+        <div class="pulse-dot"></div>
+        <span class="logo-text">INZAN<span class="highlight">RECEPTION</span></span>
+      </div>
+      <div class="system-status">
+        <span class="status-indicator online"></span>
+        <span class="status-text">Desk Console</span>
+      </div>
+    </header>
+
+    <!-- Main Console -->
+    <main class="reception-main">
+      <!-- Grid Panel -->
+      <div class="glass-card reception-card">
+        <div class="reception-header">
+          <h2>Locker Status Grid</h2>
+          <p>Assign keys and generate Apple Wallet passes for incoming gym members.</p>
+        </div>
+
+        <div class="locker-grid" id="locker-grid">
+          <!-- Lockers 1 to 30 will be generated dynamically -->
+        </div>
+      </div>
+    </main>
+
+    <!-- Assignment Modal (Popup showing QR code for user to scan on the spot) -->
+    <div class="modal-overlay hidden" id="assignment-modal">
+      <div class="glass-card modal-content">
+        <div class="modal-header">
+          <h3>Locker Assigned Successfully!</h3>
+          <button class="close-modal-btn" id="close-modal-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-instruction">Point the client's phone camera at this QR code to download their Apple Wallet pass instantly:</p>
+          
+          <!-- Simulated / Live QR Display -->
+          <div class="qr-container">
+            <div class="qr-placeholder" id="qr-display-box">
+              <!-- QR Code or download links rendered dynamically -->
+              <span class="qr-text">Generating Pass Link...</span>
+            </div>
+          </div>
+
+          <div class="modal-pass-details">
+            <div><strong>Locker Number:</strong> <span id="modal-locker-id">--</span></div>
+            <div><strong>Access Key:</strong> <code id="modal-access-token">--</code></div>
+          </div>
+
+          <div class="modal-actions">
+            <a href="#" class="wallet-btn apple-wallet" id="modal-download-link" download>
+              <span class="wallet-icon"></span> Add to Apple Wallet
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PIN Entry Overlay (Initial Security Gate) -->
+    <div class="modal-overlay" id="pin-overlay">
+      <div class="glass-card pin-card">
+        <h3>Reception Console Authorization</h3>
+        <p>Please enter the administrative PIN to unlock the desk terminal controls:</p>
+        <div class="pin-input-group">
+          <input type="password" id="reception-pin" placeholder="Enter PIN" maxlength="10">
+          <button class="submit-btn" id="pin-submit-btn">Unlock Controls</button>
+        </div>
+        <div class="auth-helper" style="margin-top: 15px;">
+          Default Pin: <code class="credential-code">1234</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+
+  <script>
+    // State
+    const state = {
+      pin: '',
+      lockers: []
+    };
+
+    // DOM Elements
+    const lockerGrid = document.getElementById('locker-grid');
+    const assignmentModal = document.getElementById('assignment-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const modalLockerId = document.getElementById('modal-locker-id');
+    const modalAccessToken = document.getElementById('modal-access-token');
+    const modalDownloadLink = document.getElementById('modal-download-link');
+    const qrDisplayBox = document.getElementById('qr-display-box');
+    const pinOverlay = document.getElementById('pin-overlay');
+    const pinInput = document.getElementById('reception-pin');
+    const pinSubmit = document.getElementById('pin-submit-btn');
+    const toastContainer = document.getElementById('toast-container');
+
+    // Display Notification Toast
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerText = message;
+      toastContainer.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.add('fading');
+        setTimeout(() => toast.remove(), 500);
+      }, 4000);
+    }
+
+    // Authenticated Fetch Wrapper
+    async function adminFetch(url, options = {}) {
+      const headers = {
+        'x-reception-pin': state.pin,
+        ...options.headers
+      };
+      
+      try {
+        const res = await fetch(url, { ...options, headers });
+        if (res.status === 401) {
+          showToast('Invalid administration PIN. Access blocked.', 'error');
+          pinOverlay.classList.remove('hidden');
+          return null;
+        }
+        return res;
+      } catch (err) {
+        showToast('Network error connecting to console server.', 'error');
+        return null;
+      }
+    }
+
+    // Load Lockers statuses
+    async function loadLockers() {
+      const res = await adminFetch('/api/reception/lockers');
+      if (!res) return;
+
+      const data = await res.json();
+      if (data.success) {
+        state.lockers = data.lockers;
+        renderGrid();
+      }
+    }
+
+    // Render 30 Lockers status blocks
+    function renderGrid() {
+      lockerGrid.innerHTML = '';
+      
+      state.lockers.forEach((locker) => {
+        const item = document.createElement('div');
+        item.className = `locker-item ${locker.status}`;
+        
+        const lockerNo = document.createElement('div');
+        lockerNo.className = 'locker-grid-no';
+        lockerNo.innerText = `#${locker.id}`;
+        
+        const lockerStatusLabel = document.createElement('div');
+        lockerStatusLabel.className = 'locker-grid-status';
+        lockerStatusLabel.innerText = locker.status.toUpperCase();
+        
+        const lockerAction = document.createElement('div');
+        lockerAction.className = 'locker-grid-action';
+
+        if (locker.status === 'available') {
+          const assignBtn = document.createElement('button');
+          assignBtn.className = 'grid-action-btn assign';
+          assignBtn.innerText = 'Assign';
+          assignBtn.onclick = () => assignLocker(locker.id);
+          lockerAction.appendChild(assignBtn);
+        } else {
+          const actionGroup = document.createElement('div');
+          actionGroup.className = 'grid-action-group';
+          
+          const releaseBtn = document.createElement('button');
+          releaseBtn.className = 'grid-action-btn release';
+          releaseBtn.innerText = 'Release';
+          releaseBtn.onclick = () => releaseLocker(locker.id);
+          
+          const viewPassBtn = document.createElement('button');
+          viewPassBtn.className = 'grid-action-btn view-pass';
+          viewPassBtn.innerText = 'Pass';
+          viewPassBtn.onclick = () => showAssignmentPass(locker.id, locker.access_token);
+          
+          actionGroup.appendChild(releaseBtn);
+          actionGroup.appendChild(viewPassBtn);
+          lockerAction.appendChild(actionGroup);
+        }
+
+        item.appendChild(lockerNo);
+        item.appendChild(lockerStatusLabel);
+        item.appendChild(lockerAction);
+        
+        lockerGrid.appendChild(item);
+      });
+    }
+
+    // Trigger Allocation
+    async function assignLocker(lockerId) {
+      const res = await adminFetch('/api/reception/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockerId })
+      });
+
+      if (!res) return;
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        showToast(`Locker #${lockerId} assigned successfully!`, 'success');
+        loadLockers();
+        showAssignmentPass(lockerId, data.accessToken);
+      } else {
+        showToast(data.message || 'Locker allocation failed.', 'error');
+      }
+    }
+
+    // Trigger Release
+    async function releaseLocker(lockerId) {
+      if (!confirm(`Are you sure you want to release and clear Locker #${lockerId}?`)) return;
+
+      const res = await adminFetch('/api/reception/release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockerId })
+      });
+
+      if (!res) return;
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        showToast(`Locker #${lockerId} is now available.`, 'success');
+        loadLockers();
+      } else {
+        showToast(data.message || 'Locker release failed.', 'error');
+      }
+    }
+
+    // Render Apple Wallet pass popup details
+    function showAssignmentPass(lockerId, token) {
+      modalLockerId.innerText = lockerId;
+      modalAccessToken.innerText = token;
+      
+      const baseUrl = window.location.origin;
+      const passDownloadUrl = `${baseUrl}/api/generate-pass?locker=${lockerId}&token=${token}`;
+      const clientUrl = `${baseUrl}/?locker=${lockerId}&token=${token}`;
+
+      modalDownloadLink.href = passDownloadUrl;
+      
+      // Generate a dynamic QR Code image linking to the clientUrl for direct PWA scan
+      qrDisplayBox.innerHTML = '';
+      
+      const qrImg = document.createElement('img');
+      // Using public QR Code generation service to render standard scan block
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(clientUrl)}&color=00f0ff&bgcolor=141622`;
+      qrImg.alt = `Locker #${lockerId} Link`;
+      qrImg.className = 'qr-image';
+      
+      qrDisplayBox.appendChild(qrImg);
+
+      assignmentModal.classList.remove('hidden');
+    }
+
+    // Close Modal Event
+    closeModalBtn.addEventListener('click', () => {
+      assignmentModal.classList.add('hidden');
+    });
+
+    // Submit PIN Event
+    pinSubmit.addEventListener('click', () => {
+      const pinVal = pinInput.value;
+      if (!pinVal) {
+        showToast('PIN is required.', 'error');
+        return;
+      }
+      state.pin = pinVal;
+      
+      // Verify PIN by fetching
+      adminFetch('/api/reception/lockers').then((res) => {
+        if (res && res.status === 200) {
+          showToast('Console unlocked successfully.', 'success');
+          pinOverlay.classList.add('hidden');
+          loadLockers();
+        }
+      });
+    });
+
+    // Enter Key Bind for PIN input
+    pinInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        pinSubmit.click();
+      }
+    });
+  </script>
+</body>
+</html>
