@@ -10,6 +10,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'inzan_athletics_super_secret_key_123';
 
+app.enable('trust proxy');
+
 // Enable CORS and JSON parsing
 app.use(cors());
 app.use(express.json());
