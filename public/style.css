@@ -1056,4 +1056,113 @@ body::before {
   to { opacity: 1; }
 }
 
+/* Mobile Viewport / PWA Notch Safe Areas */
+.pwa-mobile-container {
+  padding-top: env(safe-area-inset-top, 24px);
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Responsive Pass Wrapper scaling */
+.pass-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.digital-pass {
+  width: 100%;
+}
+
+/* Scan Init Card specifics */
+.scan-init-card {
+  padding: 48px 24px;
+  width: 100%;
+}
+
+.scan-btn {
+  width: 100%;
+  margin-top: 16px;
+  height: 52px;
+}
+
+/* In-App Camera Scanner Viewfinder */
+.scanner-modal-content {
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+}
+
+.scanner-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.camera-viewfinder {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #000000;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Scanner target box override layout styling */
+#reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.scanner-fallback-message {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Media query to scale down padding on smaller viewports (e.g. iPhone SE / 5) */
+@media (max-height: 680px) {
+  .app-container {
+    gap: 12px;
+  }
+  
+  .digital-pass {
+    border-radius: 20px;
+  }
+  
+  .pass-header {
+    padding: 16px 20px 12px 20px;
+  }
+  
+  .pass-body {
+    padding: 0 20px 16px 20px;
+  }
+  
+  .locker-number {
+    font-size: 40px;
+  }
+  
+  .pass-action-area {
+    padding: 20px 20px;
+  }
+  
+  .unlock-btn {
+    height: 52px;
+    font-size: 14px;
+  }
+  
+  .pass-footer {
+    padding: 16px 20px;
+    gap: 12px;
+  }
+}
+
+
 

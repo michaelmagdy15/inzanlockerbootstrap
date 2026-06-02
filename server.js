@@ -172,6 +172,21 @@ app.post('/api/unlock-locker', (req, res) => {
       });
     }
 
+    // 12-Hour Expiry Check (12 * 60 * 60 * 1000 = 43,200,000 milliseconds)
+    const twelveHours = 12 * 60 * 60 * 1000;
+    if (locker.assigned_at && (Date.now() - locker.assigned_at > twelveHours)) {
+      // Automatically release locker on expired access attempt
+      db.run(
+        "UPDATE lockers SET status = 'available', access_token = NULL, assigned_at = NULL WHERE id = ?",
+        [targetLockerId]
+      );
+      await logAccess(targetLockerId, 'unlock', 'expired', ip, 1, 'Attempted access with expired token (>12 hours)');
+      return res.status(403).json({
+        success: false,
+        message: 'Locker assignment has expired (12-hour limit reached). Please reassign at reception.'
+      });
+    }
+
     // Anomaly Detection: Rate limit access attempts (e.g. >3 requests within 60 seconds for this locker)
     const sixtySecondsAgo = Date.now() - 60000;
     db.get(
@@ -234,6 +249,37 @@ app.post('/api/unlock-locker', (req, res) => {
         });
       }
     );
+  });
+});
+
+// GET /api/verify-token (Verify if a token is still active and valid)
+app.get('/api/verify-token', (req, res) => {
+  const { locker, token } = req.query;
+
+  if (!locker || isNaN(parseInt(locker, 10)) || !token) {
+    return res.status(400).json({ success: false, message: 'Locker ID and token are required.' });
+  }
+
+  const targetLockerId = parseInt(locker, 10);
+
+  db.get('SELECT * FROM lockers WHERE id = ?', [targetLockerId], (err, lockerRow) => {
+    if (err || !lockerRow) {
+      return res.json({ success: true, valid: false, message: 'Locker not found.' });
+    }
+
+    if (lockerRow.status !== 'occupied' || lockerRow.access_token !== token) {
+      return res.json({ success: true, valid: false, message: 'Token is invalid or locker is released.' });
+    }
+
+    // Expiry Check (12 hours)
+    const twelveHours = 12 * 60 * 60 * 1000;
+    if (lockerRow.assigned_at && (Date.now() - lockerRow.assigned_at > twelveHours)) {
+      // Auto release expired locker in background
+      db.run("UPDATE lockers SET status = 'available', access_token = NULL, assigned_at = NULL WHERE id = ?", [targetLockerId]);
+      return res.json({ success: true, valid: false, message: 'Locker assignment has expired.' });
+    }
+
+    return res.json({ success: true, valid: true, message: 'Token is valid.' });
   });
 });
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Inzan Athletics - Locker Pass</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
@@ -11,9 +11,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- Load HTML5 QR Code Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
 </head>
 <body>
-  <div class="app-container">
+  <div class="app-container pwa-mobile-container">
     <!-- Header -->
     <header class="header">
       <div class="logo-container">
@@ -26,18 +28,22 @@
       </div>
     </header>
 
-    <!-- Main Card (Digital Pass Design) -->
+    <!-- Main Card Content -->
     <main class="pass-wrapper" id="main-pass-screen">
-      <!-- Error Message Card (If token or locker is missing/expired) -->
-      <div class="glass-card error-card hidden" id="access-error-card">
-        <div class="error-icon">⚠️</div>
+      
+      <!-- SCAN TO INITIALIZE CARD (Shown when no token is present) -->
+      <div class="glass-card error-card scan-init-card" id="access-error-card">
+        <div class="error-icon">🎫</div>
         <h2>Access Pass Required</h2>
-        <p>No active locker assignment was detected on this phone. Please scan the QR code at the reception desk to assign a locker and add it to your Apple Wallet.</p>
+        <p>No active locker assignment was found on this phone. Please scan the QR code displayed at reception to load your locker ticket.</p>
+        <button class="submit-btn scan-btn" id="start-scan-btn">
+          📷 Scan Assignment QR
+        </button>
       </div>
 
-      <!-- Valid Pass Card -->
-      <div class="digital-pass" id="pass-card">
-        <!-- Pass Top -->
+      <!-- ACTIVE LOCKER CARD (Shown when a token is cached and valid) -->
+      <div class="digital-pass hidden" id="pass-card">
+        <!-- Pass Header -->
         <div class="pass-header">
           <div class="org-info">
             <span class="org-label">GYM MEMBER ACCESS</span>
@@ -46,7 +52,7 @@
           <div class="pass-icon">🔓</div>
         </div>
 
-        <!-- Pass Middle -->
+        <!-- Pass Locker Stats -->
         <div class="pass-body">
           <div class="locker-id-section">
             <span class="pass-label">LOCKER NUMBER</span>
@@ -58,14 +64,14 @@
           </div>
         </div>
 
-        <!-- Pass Graphic Cutout -->
+        <!-- Pass Ticket Cutout Line -->
         <div class="pass-divider">
           <div class="cutout left"></div>
           <div class="dots-line"></div>
           <div class="cutout right"></div>
         </div>
 
-        <!-- Pass Action Button -->
+        <!-- Pass Trigger Action -->
         <div class="pass-action-area">
           <button class="unlock-btn" id="unlock-btn" disabled>
             <div class="btn-ripple-container">
@@ -78,7 +84,7 @@
           </button>
         </div>
 
-        <!-- QR Code / Wallet Actions -->
+        <!-- Pass Footer / Dynamic Card Action -->
         <div class="pass-footer" id="pass-footer">
           <div class="pass-instructions" id="pass-instructions">
             Keep this pass inside your smartphone wallet to unlock your locker instantly anytime:
@@ -96,29 +102,35 @@
       </div>
     </main>
 
-    <!-- Toasts notifications -->
+    <!-- IN-APP CAMERA SCANNER OVERLAY -->
+    <div class="modal-overlay hidden" id="scanner-modal">
+      <div class="glass-card scanner-modal-content">
+        <div class="modal-header">
+          <h3>Scan Assignment QR</h3>
+          <button class="close-modal-btn" id="close-scanner-btn">✕</button>
+        </div>
+        <div class="scanner-body">
+          <p class="modal-instruction">Center the QR code shown at the reception desk in the camera view below:</p>
+          <div class="camera-viewfinder" id="reader"></div>
+          <div class="scanner-fallback-message" id="scanner-status">Starting camera...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications container -->
     <div class="toast-container" id="toast-container"></div>
   </div>
 
   <script>
-    // Register PWA Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('Service Worker registered.', reg.scope))
-          .catch(err => console.warn('Service Worker registration failed.', err));
-      });
-    }
-
     // App State
     const state = {
-      lockerId: null,
-      token: null,
-      isUnlocking: false
+      lockerId: localStorage.getItem('lockerId') || null,
+      token: localStorage.getItem('token') || null,
+      isUnlocking: false,
+      html5QrcodeScanner: null
     };
 
     // DOM Elements
-    const mainPassScreen = document.getElementById('main-pass-screen');
     const errorCard = document.getElementById('access-error-card');
     const passCard = document.getElementById('pass-card');
     const lockerDisplay = document.getElementById('locker-number-display');
@@ -126,11 +138,17 @@
     const unlockBtn = document.getElementById('unlock-btn');
     const btnText = document.getElementById('btn-text');
     const btnSpinner = document.getElementById('btn-spinner');
+    
     const appleWalletBtn = document.getElementById('apple-wallet-btn');
     const genericWalletBtn = document.getElementById('generic-wallet-btn');
     const toastContainer = document.getElementById('toast-container');
+    
+    const scannerModal = document.getElementById('scanner-modal');
+    const startScanBtn = document.getElementById('start-scan-btn');
+    const closeScannerBtn = document.getElementById('close-scanner-btn');
+    const scannerStatus = document.getElementById('scanner-status');
 
-    // Notify Toast Helper
+    // Notify Toast
     function showToast(message, type = 'info') {
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
@@ -143,8 +161,8 @@
       }, 4000);
     }
 
-    // Parse parameters
-    function parseParams() {
+    // Check URL parameters for override or new scan
+    function checkUrlParams() {
       const params = new URLSearchParams(window.location.search);
       const locker = params.get('locker');
       const token = params.get('token');
@@ -152,27 +170,71 @@
       if (locker && !isNaN(parseInt(locker, 10)) && token) {
         state.lockerId = parseInt(locker, 10);
         state.token = token;
+        
+        // Cache locally
+        localStorage.setItem('lockerId', state.lockerId);
+        localStorage.setItem('token', state.token);
+        
+        // Clean URL to prevent credentials leakage
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
         return true;
       }
       return false;
     }
 
-    // Setup interface
-    function initApp() {
-      const hasAccess = parseParams();
-      
-      if (hasAccess) {
-        errorCard.classList.add('hidden');
-        passCard.classList.remove('hidden');
+    // Validate stored token with backend API
+    async function validateActiveLocker() {
+      if (!state.lockerId || !state.token) return false;
+
+      try {
+        const res = await fetch(`/api/verify-token?locker=${state.lockerId}&token=${state.token}`);
+        if (!res.ok) return false;
         
-        lockerDisplay.innerText = state.lockerId;
-        unlockBtn.removeAttribute('disabled');
-        btnText.innerText = `Tap to Unlock Locker #${state.lockerId}`;
-      } else {
-        // Block access, show error message
-        passCard.classList.add('hidden');
-        errorCard.classList.remove('hidden');
+        const data = await res.json();
+        if (data.success && data.valid) {
+          return true;
+        }
+      } catch (err) {
+        console.warn('Unable to verify token with server, using local validation cache.');
+        return true; // Fallback to offline local copy if server is unreachable
       }
+
+      // Token invalid or expired -> Clear cache
+      clearCachedToken();
+      return false;
+    }
+
+    function clearCachedToken() {
+      localStorage.removeItem('lockerId');
+      localStorage.removeItem('token');
+      state.lockerId = null;
+      state.token = null;
+    }
+
+    // Initialize application layout
+    async function initApp() {
+      // Prioritize URL scan values
+      checkUrlParams();
+
+      if (state.lockerId && state.token) {
+        // Validate active locker state
+        const isValid = await validateActiveLocker();
+        
+        if (isValid) {
+          errorCard.classList.add('hidden');
+          passCard.classList.remove('hidden');
+          
+          lockerDisplay.innerText = state.lockerId;
+          unlockBtn.removeAttribute('disabled');
+          btnText.innerText = `Tap to Unlock Locker #${state.lockerId}`;
+          return;
+        }
+      }
+
+      // No valid assignment -> show scan card
+      passCard.classList.add('hidden');
+      errorCard.classList.remove('hidden');
     }
 
     // Haptics
@@ -182,7 +244,7 @@
       }
     }
 
-    // Unlock logic
+    // Unlock API Dispatch
     async function unlockLocker() {
       if (!state.lockerId || !state.token || state.isUnlocking) return;
 
@@ -209,7 +271,7 @@
           lockBadge.innerText = 'UNLOCKED';
           lockBadge.className = 'lock-badge unlocked';
           btnText.innerText = 'Locker Unlocked!';
-          showToast(data.message || `Locker #${state.lockerId} popped successfully!`, 'success');
+          showToast(data.message || `Locker #${state.lockerId} unlocked!`, 'success');
           
           triggerHaptic(500);
 
@@ -225,11 +287,11 @@
         }
 
       } catch (err) {
-        console.error('Unlock failed:', err);
+        console.error('Unlock trigger failed:', err);
         lockBadge.innerText = 'FAILED';
         lockBadge.className = 'lock-badge failed';
         btnText.innerText = 'Tap to Retry';
-        showToast(err.message || 'Connection to locker broker failed.', 'error');
+        showToast(err.message || 'Broker connection failed.', 'error');
         
         triggerHaptic([100, 50, 100, 50, 100]);
         
@@ -239,12 +301,17 @@
           unlockBtn.removeAttribute('disabled');
           state.isUnlocking = false;
         }, 3000);
+
+        // Check if token expired on backend during transaction
+        if (err.message.includes('expired') || err.message.includes('Invalid')) {
+          setTimeout(() => initApp(), 2500);
+        }
       } finally {
         btnSpinner.classList.add('hidden');
       }
     }
 
-    // Dynamic pass generation trigger
+    // Apple Wallet Pass API
     async function downloadAppleWalletPass() {
       if (!state.lockerId || !state.token) return;
 
@@ -256,23 +323,97 @@
           const passData = await res.json();
           if (!passData.configured) {
             alert(
-              `🎫 PASS CARD DETAILS (Inzan Athletics)\n\n` +
+              `🎫 PASS DETAILS (Inzan Athletics)\n\n` +
               `Locker: #${state.lockerId}\n` +
-              `Token Key: ${state.token}\n` +
               `Scan URL: ${passData.mockPassData.barcode.message}\n\n` +
-              `Admin: To finalize signed pass installations, please upload certificates inside the /certs directory.`
+              `Admin: To configure Apple Wallet download files, please upload certificates inside the /certs directory.`
             );
           }
         } else {
-          // Download directly
           window.location.href = `/api/generate-pass?locker=${state.lockerId}&token=${state.token}`;
         }
       } catch (err) {
-        showToast('Error querying Apple Wallet compiler.', 'error');
+        showToast('Error generating Apple Wallet pass.', 'error');
       }
     }
 
-    // Listeners
+    // In-App Camera QR Code scanner
+    function startCameraScanner() {
+      scannerModal.classList.remove('hidden');
+      scannerStatus.innerText = 'Requesting camera access...';
+      
+      // Delay initialization slightly to let UI render
+      setTimeout(() => {
+        try {
+          state.html5QrcodeScanner = new Html5Qrcode("reader");
+          
+          state.html5QrcodeScanner.start(
+            { facingMode: "environment" }, 
+            {
+              fps: 10,
+              qrbox: { width: 200, height: 200 }
+            },
+            onScanSuccess,
+            onScanFailure
+          ).then(() => {
+            scannerStatus.innerText = 'Viewfinder active. Scan QR code.';
+          }).catch(err => {
+            console.error('Camera start failed:', err);
+            scannerStatus.innerText = 'Camera access blocked. Please enable camera permissions.';
+          });
+        } catch (e) {
+          scannerStatus.innerText = 'Failed to load camera scanner.';
+        }
+      }, 300);
+    }
+
+    function stopCameraScanner() {
+      if (state.html5QrcodeScanner) {
+        state.html5QrcodeScanner.stop().then(() => {
+          scannerModal.classList.add('hidden');
+          state.html5QrcodeScanner = null;
+        }).catch(err => {
+          console.error('Error stopping scanner:', err);
+          scannerModal.classList.add('hidden');
+          state.html5QrcodeScanner = null;
+        });
+      } else {
+        scannerModal.classList.add('hidden');
+      }
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log(`Scan result: ${decodedText}`);
+      triggerHaptic(150);
+      stopCameraScanner();
+      
+      try {
+        const url = new URL(decodedText);
+        const locker = url.searchParams.get('locker');
+        const token = url.searchParams.get('token');
+        
+        if (locker && token) {
+          state.lockerId = parseInt(locker, 10);
+          state.token = token;
+          
+          localStorage.setItem('lockerId', state.lockerId);
+          localStorage.setItem('token', state.token);
+          
+          showToast(`Pass for Locker #${state.lockerId} successfully loaded!`, 'success');
+          initApp();
+        } else {
+          showToast('Invalid QR Code. Please scan a valid Locker Link pass.', 'error');
+        }
+      } catch (e) {
+        showToast('Invalid QR Code payload. Cannot parse URL.', 'error');
+      }
+    }
+
+    function onScanFailure(error) {
+      // Quiet fail to avoid spamming console during camera stream frames
+    }
+
+    // Event Bindings
     unlockBtn.addEventListener('click', (e) => {
       const rect = unlockBtn.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -289,8 +430,11 @@
 
     appleWalletBtn.addEventListener('click', downloadAppleWalletPass);
     genericWalletBtn.addEventListener('click', downloadAppleWalletPass);
+    
+    startScanBtn.addEventListener('click', startCameraScanner);
+    closeScannerBtn.addEventListener('click', stopCameraScanner);
 
-    // Initial load
+    // Initial boot check
     initApp();
   </script>
 </body>
