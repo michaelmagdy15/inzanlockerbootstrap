@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LockerLink - Smart IoT Access</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-container">
+        <div class="pulse-dot"></div>
+        <span class="logo-text">LOCKER<span class="highlight">LINK</span></span>
+      </div>
+      <div class="system-status" id="system-status">
+        <span class="status-indicator online"></span>
+        <span class="status-text">Connected</span>
+      </div>
+    </header>
+
+    <!-- Main Card (Digital Pass Design) -->
+    <main class="pass-wrapper">
+      <div class="digital-pass" id="pass-card">
+        <!-- Pass Top -->
+        <div class="pass-header">
+          <div class="org-info">
+            <span class="org-label">GYM MEMBER ACCESS</span>
+            <span class="gym-name">Inzan Sports Club</span>
+          </div>
+          <div class="pass-icon">🔓</div>
+        </div>
+
+        <!-- Pass Middle (Locker ID Details) -->
+        <div class="pass-body">
+          <div class="locker-id-section">
+            <span class="pass-label">ASSIGNED LOCKER</span>
+            <h1 class="locker-number" id="locker-number-display">--</h1>
+          </div>
+          <div class="locker-status-section">
+            <span class="pass-label">LOCK STATE</span>
+            <span class="lock-badge locked" id="lock-badge-status">LOCKED</span>
+          </div>
+        </div>
+
+        <!-- Pass Graphic Grid / Cutout -->
+        <div class="pass-divider">
+          <div class="cutout left"></div>
+          <div class="dots-line"></div>
+          <div class="cutout right"></div>
+        </div>
+
+        <!-- Pass Action Area -->
+        <div class="pass-action-area">
+          <button class="unlock-btn" id="unlock-btn" disabled>
+            <div class="btn-ripple-container">
+              <div class="btn-ripple" id="ripple"></div>
+            </div>
+            <span class="btn-text" id="btn-text">Select a Locker</span>
+            <svg class="spinner hidden" id="btn-spinner" viewBox="0 0 24 24">
+              <circle class="path" cx="12" cy="12" r="10" fill="none" stroke-width="3"></circle>
+            </svg>
+          </button>
+        </div>
+
+        <!-- QR Code / Manual Access Info -->
+        <div class="pass-footer" id="pass-footer">
+          <div class="pass-instructions" id="pass-instructions">
+            Scan QR code or click below to save this ticket to your Apple/Google Wallet.
+          </div>
+          
+          <!-- Wallet Action Button -->
+          <div class="wallet-actions">
+            <a href="#" class="wallet-btn apple-wallet" id="apple-wallet-btn" style="display: none;">
+              <span class="wallet-icon"></span> Add to Apple Wallet
+            </a>
+            <button class="wallet-btn generic-wallet" id="generic-wallet-btn" style="display: none;">
+              🎫 View Pass Details
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Selector (If URL parameter is missing) -->
+      <div class="quick-selector-card hidden" id="selector-card">
+        <h3>Locker Access Required</h3>
+        <p>No locker ID found in the URL. Please enter your assigned locker number below:</p>
+        <div class="form-group">
+          <input type="number" id="manual-locker-input" placeholder="e.g. 14" min="1" max="999">
+          <button class="submit-btn" id="manual-locker-submit">Set Locker</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Status Messages / Toasts -->
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('Service Worker registered.', reg.scope))
+          .catch(err => console.warn('Service Worker registration failed.', err));
+      });
+    }
+
+    // App State
+    const state = {
+      lockerId: null,
+      isUnlocking: false,
+      baseUrl: window.location.origin
+    };
+
+    // DOM Elements
+    const lockerDisplay = document.getElementById('locker-number-display');
+    const lockBadge = document.getElementById('lock-badge-status');
+    const unlockBtn = document.getElementById('unlock-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const appleWalletBtn = document.getElementById('apple-wallet-btn');
+    const genericWalletBtn = document.getElementById('generic-wallet-btn');
+    const toastContainer = document.getElementById('toast-container');
+    const selectorCard = document.getElementById('selector-card');
+    const passCard = document.getElementById('pass-card');
+    const manualInput = document.getElementById('manual-locker-input');
+    const manualSubmit = document.getElementById('manual-locker-submit');
+
+    // Parse URL parameter
+    function parseLockerId() {
+      const params = new URLSearchParams(window.location.search);
+      const locker = params.get('locker');
+      if (locker && !isNaN(parseInt(locker, 10))) {
+        return parseInt(locker, 10);
+      }
+      return null;
+    }
+
+    // Show Notification Toast
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerText = message;
+      toastContainer.appendChild(toast);
+      
+      // Auto dismiss after 4 seconds
+      setTimeout(() => {
+        toast.classList.add('fading');
+        setTimeout(() => toast.remove(), 500);
+      }, 4000);
+    }
+
+    // Initialize UI elements based on locker configuration
+    function initApp() {
+      state.lockerId = parseLockerId();
+      
+      if (state.lockerId) {
+        // Locker configured
+        lockerDisplay.innerText = state.lockerId;
+        unlockBtn.removeAttribute('disabled');
+        btnText.innerText = `Tap to Unlock Locker #${state.lockerId}`;
+        
+        // Show Wallet links
+        appleWalletBtn.style.display = 'inline-flex';
+        appleWalletBtn.href = `/api/generate-pass?locker=${state.lockerId}`;
+        
+        genericWalletBtn.style.display = 'inline-flex';
+        
+        // Ensure selector card is hidden and digital pass is visible
+        selectorCard.classList.add('hidden');
+        passCard.classList.remove('pass-minimized');
+      } else {
+        // No locker ID configured - request input
+        lockerDisplay.innerText = '--';
+        unlockBtn.setAttribute('disabled', 'true');
+        btnText.innerText = 'Select a Locker';
+        
+        // Hide wallet options
+        appleWalletBtn.style.display = 'none';
+        genericWalletBtn.style.display = 'none';
+        
+        // Display manual input card
+        selectorCard.classList.remove('hidden');
+        passCard.classList.add('pass-minimized');
+      }
+    }
+
+    // Perform Haptic feedback if available
+    function triggerHaptic(pattern = 100) {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    // Handle locker unlocking API request
+    async function unlockLocker() {
+      if (!state.lockerId || state.isUnlocking) return;
+
+      state.isUnlocking = true;
+      unlockBtn.setAttribute('disabled', 'true');
+      btnText.innerText = 'Transmitting Command...';
+      btnSpinner.classList.remove('hidden');
+      
+      // Animate lock badge state
+      lockBadge.innerText = 'DISPATCHING';
+      lockBadge.className = 'lock-badge pending';
+
+      triggerHaptic([50, 50, 50]);
+
+      try {
+        const response = await fetch('/api/unlock-locker', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ lockerId: state.lockerId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Success Feedback
+          lockBadge.innerText = 'UNLOCKED';
+          lockBadge.className = 'lock-badge unlocked';
+          btnText.innerText = 'Locker Unlocked!';
+          showToast(`Locker #${state.lockerId} unlocked successfully!`, 'success');
+          
+          triggerHaptic(500); // Strong haptic pulse
+
+          // Reset to locked state after 5 seconds (relock state)
+          setTimeout(() => {
+            lockBadge.innerText = 'LOCKED';
+            lockBadge.className = 'lock-badge locked';
+            btnText.innerText = `Tap to Unlock Locker #${state.lockerId}`;
+            unlockBtn.removeAttribute('disabled');
+            state.isUnlocking = false;
+          }, 5000);
+
+        } else {
+          // Error returned by server
+          throw new Error(data.message || 'Transmission failed.');
+        }
+
+      } catch (err) {
+        console.error('Unlock error:', err);
+        lockBadge.innerText = 'FAILED';
+        lockBadge.className = 'lock-badge failed';
+        btnText.innerText = 'Failed. Try Again';
+        showToast(err.message || 'Unable to connect to locker middleware.', 'error');
+        
+        triggerHaptic([100, 50, 100, 50, 100]); // Danger pattern
+        
+        setTimeout(() => {
+          lockBadge.innerText = 'LOCKED';
+          lockBadge.className = 'lock-badge locked';
+          unlockBtn.removeAttribute('disabled');
+          state.isUnlocking = false;
+        }, 3000);
+      } finally {
+        btnSpinner.classList.add('hidden');
+      }
+    }
+
+    // Bind Event Listeners
+    unlockBtn.addEventListener('click', (e) => {
+      // Create ripple effect centered on click
+      const rect = unlockBtn.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const ripple = document.getElementById('ripple');
+      
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      ripple.classList.add('active');
+      
+      setTimeout(() => {
+        ripple.classList.remove('active');
+      }, 600);
+
+      unlockLocker();
+    });
+
+    manualSubmit.addEventListener('click', () => {
+      const lockerVal = parseInt(manualInput.value, 10);
+      if (!lockerVal || isNaN(lockerVal)) {
+        showToast('Please enter a valid numeric locker number.', 'error');
+        return;
+      }
+      // Update URL search and reload configuration
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('locker', lockerVal);
+      window.history.pushState({}, '', newUrl);
+      initApp();
+    });
+
+    genericWalletBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch(`/api/generate-pass?locker=${state.lockerId}`);
+        if (!res.ok) throw new Error('Failed to retrieve pass details');
+        
+        const contentType = res.headers.get('Content-Type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          const passData = await res.json();
+          if (!passData.configured) {
+            // Render beautiful custom popup modal containing mock QR pass details
+            alert(
+              `🎫 DIGITAL TICKET DETAILS\n\n` +
+              `Organization: ${passData.mockPassData.organizationName}\n` +
+              `Description: ${passData.mockPassData.description}\n` +
+              `QR Payload: ${passData.mockPassData.barcode.message}\n\n` +
+              `Developer Note: Add Apple Developer signing certs to export standard .pkpass packages.`
+            );
+          }
+        } else {
+          // If valid pkpass file was generated directly, download it
+          window.location.href = `/api/generate-pass?locker=${state.lockerId}`;
+        }
+      } catch (err) {
+        showToast('Error querying wallet pass generator.', 'error');
+      }
+    });
+
+    // Run Initializer
+    initApp();
+  </script>
+</body>
+</html>

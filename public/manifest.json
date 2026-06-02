@@ -1,0 +1,21 @@
+{
+  "short_name": "LockerLink",
+  "name": "LockerLink IoT Locker Controller",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "images/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/?utm_source=homescreen",
+  "background_color": "#0d0e12",
+  "theme_color": "#1f2937",
+  "display": "standalone",
+  "orientation": "portrait"
+}
