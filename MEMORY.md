@@ -6,7 +6,7 @@ This file serves as a persistent memory record for AI agents working on the **In
 
 ## 1. System Overview & Architecture
 
-The Locker Middleware coordinates locker operations for **Inzan Athletics** (30 lockers total) without requiring gym members to log in or use passwords.
+The Locker Middleware coordinates locker operations for **Inzan Athletics** (68 physical lockers total) without requiring gym members to log in or use passwords.
 
 ```
        +-----------------------------------+
@@ -23,7 +23,7 @@ The Locker Middleware coordinates locker operations for **Inzan Athletics** (30 
                | (SQLite DB query)  | (MQTT Commands over TCP)
                v                    v
        +-------+--------+   +-------+-----------------+
-       |   lockers.db   |   |   Cloudflare Tunnel     |
+       |   lockers.db   |   |   Bore TCP Tunnel       |
        | (SQLite File)  |   | (Bridge to Local Net)   |
        +----------------+   +-------+-----------------+
                                     |
@@ -31,73 +31,69 @@ The Locker Middleware coordinates locker operations for **Inzan Athletics** (30 
                                     v
                             +-------+-----------------+
                             |  Local MQTT Broker      |
-                            |  (192.168.68.2:1883)    |
+                            |  (192.168.10.31:1883)   |
                             +-------------------------+
+                                    |
+                                    v (Locker Pop!)
+                            [Physical Lockers]
 ```
 
 ### Components:
 1. **Express Server (`server.js`)**: Backend routing API for client unlock requests, token validation, reception desk allocation/release, and system settings.
 2. **SQLite Database (`lockers.db` managed by `database.js`)**:
-   - `lockers`: Stores locker ID (1-30), status (available/occupied), token, and allocation timestamp.
+   - `lockers`: Stores locker ID (physical string name e.g., `'M27'`, `'F12'`), status (`available`/`occupied`/`maintenance`), token, and allocation timestamp.
    - `access_logs`: Tracks client operations, flagging rate-limit anomalies.
    - `settings`: Stores dynamic configuration values that override environment variables.
-3. **Gym Member UI (`public/index.html`)**: Mobile-responsive zero-login PWA. Automatically caches assigned credentials in `localStorage` and includes an HTML5-based QR code camera scanner.
+3. **Gym Member UI (`public/index.html`)**: Mobile-responsive zero-login PWA. Automatically caches assigned credentials in `localStorage` and includes an HTML5-based QR code camera scanner. Resolves parameters as string names (like `M27`).
 4. **Reception Dashboard (`public/reception.html`)**: Console showing locker statuses, assignment/release controls, Apple Wallet pass generation, and the System Settings panel.
+5. **Standard Configurations (`lockers_config.json`)**: Pre-seeded config of all 68 standard gym lockers (Men: `M1`–`M34`, Women: `F1`–`F34`) with their local dashboard IDs, command topics, protocols, and initial statuses.
 
 ---
 
 ## 2. Recent Implementations & Fixes
 
-### A. QR Scanner Contrast & Decoding Fix
-*   **The Issue:** The PWA's in-app camera scanner (powered by `html5-qrcode`) failed to scan the QR code displayed on the reception desk. The camera feed opened, but decoding never triggered.
-*   **The Cause:** The generated QR code used light cyan (`#00f0ff`) on a dark background (`#141622`). Open-source QR code decoders require standard high-contrast dark pixels on a light background.
+### A. Alphanumeric Locker Name Mapping
+*   **The Issue:** The previous implementation used sequential integer IDs (1–32) which did not match the physical locker room labeling (`M1`–`M34` for men and `F1`–`F34` for women). Additionally, different locker models expected custom command topics and protocol formats.
 *   **The Solution:**
-    - Modified `public/reception.html` to generate QR codes with standard high contrast (`color=141622` and `bgcolor=ffffff`).
-    - Updated the `.qr-placeholder` background in `public/style.css` to `#ffffff` (white).
-    - The PWA scanner now reads and associates passes instantly on mobile devices.
+    - Generated a static mapping [lockers_config.json](file:///c:/inzanlockers/lockers_config.json) of all 68 standard lockers from the primary local server at `http://192.168.10.31:3001/api/lockers`.
+    - Upgraded the SQLite database schema to use `id TEXT PRIMARY KEY` so locker records are keyed by their physical name (e.g. `'M27'`).
+    - Added database schema migration detection: if the older schema is present, the app automatically drops and recreates the tables to upgrade smoothly.
+    - Updated `/api/auto-assign` to search for available lockers matching prefix patterns (`id LIKE 'M%'` or `id LIKE 'F%'`) and sort them numerically by their suffix.
 
-### B. System Configuration Panel (Reception Dashboard)
-*   **The Feature:** Added a configuration interface directly in the reception panel to configure environment settings at runtime.
-*   **The Backend Integration:**
-    - Added the `settings` key-value table to `database.js`.
-    - Integrated dynamic configuration loading in `server.js`. The server queries `settings` on startup and overrides process environment variables.
-    - Exposed authenticated routes `GET /api/reception/config` and `POST /api/reception/config` (secured by the Reception PIN).
-    - **Hot-reloading MQTT:** On updating broker settings, the server automatically disconnects from the old MQTT client and connects to the new target without requiring server restarts.
-*   **The Frontend UI:**
-    - Added a gear icon button "⚙️ System Settings" in `reception.html` (visible only after entering the PIN).
-    - Created a modal form to view and edit:
-      - MQTT Broker IP/URL
-      - MQTT Port
-      - Username & Password
-      - Command Topic Template
-      - Base Application URL
-      - Reception dashboard authentication PIN
-    - Styled the inputs to match the dark, premium glassmorphism design system.
+### B. Dynamic Topic Resolution & Solenoid Burnout Prevention
+*   **The Issue:** Solar/electromagnetic latches are only rated for momentary activation (pulsing for 1–3 seconds). Keeping a relay `"ON"` indefinitely causes the solenoid coil to draw constant current, overheat, emit a burning smell, and eventually burn out.
+*   **The Solution:**
+    - Integrated config lookup at unlock time. When `/api/unlock-locker` is invoked, the backend retrieves the locker's `command_topic` and `protocol` from `lockers_config.json`.
+    - If the locker uses the `aywana` protocol (Home Assistant switch relay), the server:
+      1. Publishes `"ON"` to the `command_topic` (to trigger the unlock).
+      2. Schedules a `setTimeout` to publish `"OFF"` to the same topic exactly **2 seconds later** (releasing current to the solenoid coil safely).
+    - If the locker uses the `rubik` protocol, it publishes the correct JSON command payload.
+
+### C. TCP Tunnel Configuration
+*   **Expose Tool:** EXPOSE local port `1883` to the public Cloud Run middleware using `bore`:
+    ```bash
+    bore.exe local 1883 --local-host 192.168.10.31 --to bore.pub
+    ```
+*   **Allocated Port:** Dynamic allocation bound the proxy connection at `bore.pub:59045`.
+*   **Cloud Run Update:** Updated the `MQTT_PORT=59045` environment variable in Google Cloud Run to route traffic through the new tunnel.
 
 ---
 
 ## 3. Operational Guide for Future Agents
 
-### Running the Local Dev Environment
-1.  **Start Dev Server:** Run `npm run dev` to boot the Node server with hot-reload watcher.
-2.  **Verify DB Init:** A new SQLite database (`lockers.db`) will initialize automatically with 30 lockers starting as `available`.
-3.  **Launch Dashboard:** Open `http://localhost:3000/reception.html` in your browser.
-    -   Default PIN is `1234`.
-    -   Once unlocked, click the "⚙️ System Settings" button in the top right to configure the broker.
-
-### Cloud Run Ephemeral Behavior Warning
-*   Because Cloud Run container filesystem instances are ephemeral, any updates saved via the System Settings panel into `lockers.db` will reset when the container sleeps or scales down.
-*   **Recommendation:** Use the System Settings panel for testing and initial verification. For production deployments, define matching environment variables in the Cloud Run configuration panel (e.g. `MQTT_BROKER`, `MQTT_PORT`, `RECEPTION_PIN`, `BASE_URL`) to ensure they persist across container scale-ups.
+### EPHEMERAL Cloud Run SQLite Reset behavior
+*   Cloud Run filesystems are ephemeral. Deploying a new revision or container restarts will reset `lockers.db` to its initial default state.
+*   The database is safely seeded from `lockers_config.json` on startup.
+*   Locker assignments (`access_token` and `status`) are stored in SQLite and will be reset on scale-to-zero or rollout. For persistent token caching, moving to an external database (e.g. Firestore, Cloud SQL) should be considered if traffic scales.
 
 ### Production Environment Variables List
-When deploying to Cloud Run, set the following env keys:
--   `MQTT_BROKER` (e.g., `tcp://broker.inzanathletics.com` routed via Cloudflare)
--   `MQTT_PORT` (e.g., `1883`)
--   `MQTT_USER`
--   `MQTT_PASSWORD`
+-   `MQTT_BROKER` (e.g., `mqtt://bore.pub`)
+-   `MQTT_PORT` (currently `59045` routed via bore)
+-   `MQTT_USER` (set to `mqtt`)
+-   `MQTT_PASSWORD` (set to `mqttpass`)
 -   `RECEPTION_PIN` (defaults to `1234` if unset)
--   `BASE_URL` (the HTTPS public endpoint of the Cloud Run instance)
+-   `BASE_URL` (`https://inzan-locker-middleware-123198087427.us-central1.run.app`)
 
 ---
 
-*Compiled on 2026-06-03 by Antigravity agent.*
+*Compiled on 2026-06-04 by Antigravity agent.*
