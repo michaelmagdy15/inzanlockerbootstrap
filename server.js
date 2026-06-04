@@ -379,6 +379,18 @@ app.post('/api/unlock-locker', (req, res) => {
             });
           }
 
+          // If it is an aywana switch relay, pulse it OFF after 2 seconds to prevent solenoid burnout
+          if (lockerMeta && lockerMeta.command_topic && lockerMeta.protocol === 'aywana') {
+            setTimeout(() => {
+              console.log(`Auto-pulsing OFF for locker ${targetLockerId} on topic ${topic}...`);
+              mqttClient.publish(topic, 'OFF', { qos: 1 }, (err) => {
+                if (err) {
+                  console.error(`Failed to auto-pulse OFF for locker ${targetLockerId}:`, err);
+                }
+              });
+            }, 2000);
+          }
+
           await logAccess(targetLockerId, 'unlock', 'success', ip, isFlagged, flagReason);
 
           let warningMessage = undefined;
