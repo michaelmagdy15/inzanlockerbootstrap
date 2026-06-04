@@ -19,45 +19,65 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 function initializeDatabase() {
   db.serialize(() => {
-    // 1. Create Lockers Table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS lockers (
-        id INTEGER PRIMARY KEY,
-        status TEXT NOT NULL DEFAULT 'available',
-        access_token TEXT,
-        assigned_at INTEGER
-      )
-    `, (err) => {
-      if (err) console.error('Error creating lockers table:', err.message);
-      else seedLockers();
-    });
+    db.all("PRAGMA table_info(lockers)", [], (err, info) => {
+      let isOldSchema = false;
+      if (!err && info && info.length > 0) {
+        const idCol = info.find(c => c.name === 'id');
+        if (idCol && idCol.type === 'INTEGER') {
+          isOldSchema = true;
+        }
+      }
 
-    // 2. Create Access Logs Table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS access_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        locker_id INTEGER NOT NULL,
-        action TEXT NOT NULL,
-        status TEXT NOT NULL,
-        ip_address TEXT,
-        timestamp INTEGER NOT NULL,
-        is_flagged INTEGER DEFAULT 0,
-        flag_reason TEXT
-      )
-    `, (err) => {
-      if (err) console.error('Error creating access_logs table:', err.message);
-    });
+      if (isOldSchema) {
+        console.log('Upgrading database schema for locker names (dropping old tables)...');
+        db.run("DROP TABLE IF EXISTS lockers");
+        db.run("DROP TABLE IF EXISTS access_logs");
+      }
 
-    // 3. Create Settings Table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT
-      )
-    `, (err) => {
-      if (err) console.error('Error creating settings table:', err.message);
-      resolveDbReady(); // Resolve once initialization is complete
+      createTablesAndSeed();
     });
+  });
+}
+
+function createTablesAndSeed() {
+  // 1. Create Lockers Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS lockers (
+      id TEXT PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'available',
+      access_token TEXT,
+      assigned_at INTEGER
+    )
+  `, (err) => {
+    if (err) console.error('Error creating lockers table:', err.message);
+    else seedLockers();
+  });
+
+  // 2. Create Access Logs Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS access_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      locker_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      status TEXT NOT NULL,
+      ip_address TEXT,
+      timestamp INTEGER NOT NULL,
+      is_flagged INTEGER DEFAULT 0,
+      flag_reason TEXT
+    )
+  `, (err) => {
+    if (err) console.error('Error creating access_logs table:', err.message);
+  });
+
+  // 3. Create Settings Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `, (err) => {
+    if (err) console.error('Error creating settings table:', err.message);
+    resolveDbReady(); // Resolve once initialization is complete
   });
 }
 
@@ -68,22 +88,27 @@ function seedLockers() {
       return;
     }
 
-    const maintenanceLockers = [1, 2, 4, 8, 12, 16, 22, 23, 29, 32];
-
     if (row.count === 0) {
-      console.log('Initializing 32 gym lockers in SQLite database...');
-      
-      const insertStmt = db.prepare('INSERT INTO lockers (id, status, access_token, assigned_at) VALUES (?, ?, ?, ?)');
-      
-      for (let i = 1; i <= 32; i++) {
-        const status = maintenanceLockers.includes(i) ? 'maintenance' : 'available';
-        insertStmt.run([i, status, null, null]);
+      console.log('Seeding 68 lockers from lockers_config.json into SQLite database...');
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const lockersConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'lockers_config.json'), 'utf8'));
+
+        const insertStmt = db.prepare('INSERT OR REPLACE INTO lockers (id, status, access_token, assigned_at) VALUES (?, ?, ?, ?)');
+
+        lockersConfig.forEach((locker) => {
+          const initialStatus = locker.status === 'maintenance' ? 'maintenance' : 'available';
+          insertStmt.run([locker.name, initialStatus, null, null]);
+        });
+
+        insertStmt.finalize((err) => {
+          if (err) console.error('Failed to seed lockers:', err.message);
+          else console.log('Successfully seeded 68 lockers.');
+        });
+      } catch (e) {
+        console.error('Failed to read or parse lockers_config.json:', e.message);
       }
-      
-      insertStmt.finalize((err) => {
-        if (err) console.error('Failed to initialize locker rows:', err.message);
-        else console.log('Successfully initialized 32 lockers (Locker #1 to #32) with maintenance flags.');
-      });
     }
   });
 }

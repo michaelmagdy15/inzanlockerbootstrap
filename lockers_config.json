@@ -1,0 +1,546 @@
+[
+  {
+    "id": 195,
+    "name": "M29",
+    "command_topic": "homeassistant/switch/men1/relay1/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 196,
+    "name": "M33",
+    "command_topic": "homeassistant/switch/men1/relay2/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "occupied"
+  },
+  {
+    "id": 197,
+    "name": "M28",
+    "command_topic": "homeassistant/switch/men1/relay4/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 198,
+    "name": "M27",
+    "command_topic": "homeassistant/switch/men1/relay7/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 199,
+    "name": "M30",
+    "command_topic": "homeassistant/switch/men1/relay8/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 200,
+    "name": "M23",
+    "command_topic": "homeassistant/switch/men1/relay11/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 201,
+    "name": "M26",
+    "command_topic": "homeassistant/switch/men1/relay12/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 202,
+    "name": "M34",
+    "command_topic": "homeassistant/switch/men1/relay6/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 203,
+    "name": "M19",
+    "command_topic": "homeassistant/switch/men1/relay13/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 204,
+    "name": "M31",
+    "command_topic": "homeassistant/switch/men1/relay5/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 205,
+    "name": "M21",
+    "command_topic": "homeassistant/switch/men1/relay14/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 206,
+    "name": "M32",
+    "command_topic": "homeassistant/switch/men1/relay15/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 207,
+    "name": "M20",
+    "command_topic": "homeassistant/switch/men1/relay9/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 208,
+    "name": "M25",
+    "command_topic": "homeassistant/switch/men1/relay3/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 209,
+    "name": "M24",
+    "command_topic": "homeassistant/switch/men1/relay16/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 210,
+    "name": "M1",
+    "command_topic": "homeassistant/switch/men2/relay2/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 211,
+    "name": "M3",
+    "command_topic": "homeassistant/switch/men2/relay3/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 212,
+    "name": "M14",
+    "command_topic": "homeassistant/switch/men2/relay4/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 213,
+    "name": "M22",
+    "command_topic": "homeassistant/switch/men1/relay10/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 214,
+    "name": "M13",
+    "command_topic": "homeassistant/switch/men2/relay6/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 215,
+    "name": "M16",
+    "command_topic": "homeassistant/switch/men2/relay10/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 216,
+    "name": "M12",
+    "command_topic": "homeassistant/switch/men2/relay1/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 217,
+    "name": "M9",
+    "command_topic": "homeassistant/switch/men2/relay9/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 218,
+    "name": "M15",
+    "command_topic": "homeassistant/switch/men2/relay12/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 219,
+    "name": "M8",
+    "command_topic": "homeassistant/switch/men2/relay16/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 220,
+    "name": "M11",
+    "command_topic": "homeassistant/switch/men2/relay5/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 221,
+    "name": "M4",
+    "command_topic": "homeassistant/switch/men2/relay13/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 222,
+    "name": "M10",
+    "command_topic": "homeassistant/switch/men2/relay14/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 223,
+    "name": "M2",
+    "command_topic": "homeassistant/switch/men2/relay7/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "maintenance"
+  },
+  {
+    "id": 224,
+    "name": "M5",
+    "command_topic": "homeassistant/switch/men2/relay11/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 225,
+    "name": "M6",
+    "command_topic": "homeassistant/switch/men2/relay8/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 226,
+    "name": "M7",
+    "command_topic": "homeassistant/switch/men2/relay15/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 227,
+    "name": "M17",
+    "command_topic": "homeassistant/switch/men3/relay1/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 240,
+    "name": "M18",
+    "command_topic": "homeassistant/switch/men3/relay2/set",
+    "protocol": "aywana",
+    "gender": "men",
+    "status": "available"
+  },
+  {
+    "id": 193,
+    "name": "F18",
+    "command_topic": "homeassistant/switch/women1/relay15/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 194,
+    "name": "F19",
+    "command_topic": "homeassistant/switch/women1/relay16/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 179,
+    "name": "F26",
+    "command_topic": "homeassistant/switch/women1/relay1/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 180,
+    "name": "F25",
+    "command_topic": "homeassistant/switch/women1/relay2/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 181,
+    "name": "F23",
+    "command_topic": "homeassistant/switch/women1/relay3/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 182,
+    "name": "F20",
+    "command_topic": "homeassistant/switch/women1/relay4/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 183,
+    "name": "F24",
+    "command_topic": "homeassistant/switch/women1/relay5/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 184,
+    "name": "F22",
+    "command_topic": "homeassistant/switch/women1/relay6/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 185,
+    "name": "F17",
+    "command_topic": "homeassistant/switch/women1/relay7/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 186,
+    "name": "F21",
+    "command_topic": "homeassistant/switch/women1/relay8/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 175,
+    "name": "F15",
+    "command_topic": "homeassistant/switch/women2/relay13/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 176,
+    "name": "F3",
+    "command_topic": "homeassistant/switch/women2/relay14/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 177,
+    "name": "F8",
+    "command_topic": "homeassistant/switch/women2/relay15/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 178,
+    "name": "F11",
+    "command_topic": "homeassistant/switch/women2/relay16/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 163,
+    "name": "F14",
+    "command_topic": "homeassistant/switch/women2/relay1/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 164,
+    "name": "F5",
+    "command_topic": "homeassistant/switch/women2/relay2/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 165,
+    "name": "F13",
+    "command_topic": "homeassistant/switch/women2/relay3/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 166,
+    "name": "F9",
+    "command_topic": "homeassistant/switch/women2/relay4/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 167,
+    "name": "F16",
+    "command_topic": "homeassistant/switch/women2/relay5/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 168,
+    "name": "F7",
+    "command_topic": "homeassistant/switch/women2/relay6/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 169,
+    "name": "F12",
+    "command_topic": "homeassistant/switch/women2/relay7/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 170,
+    "name": "F1",
+    "command_topic": "homeassistant/switch/women2/relay8/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 171,
+    "name": "F6",
+    "command_topic": "homeassistant/switch/women2/relay9/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 172,
+    "name": "F4",
+    "command_topic": "homeassistant/switch/women2/relay10/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 173,
+    "name": "F10",
+    "command_topic": "homeassistant/switch/women2/relay11/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 174,
+    "name": "F2",
+    "command_topic": "homeassistant/switch/women2/relay12/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 158,
+    "name": "F30",
+    "command_topic": "homeassistant/switch/women3/relay4/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 159,
+    "name": "F31",
+    "command_topic": "homeassistant/switch/women3/relay5/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 160,
+    "name": "F33",
+    "command_topic": "homeassistant/switch/women3/relay7/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 161,
+    "name": "F32",
+    "command_topic": "homeassistant/switch/women3/relay6/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 162,
+    "name": "F34",
+    "command_topic": "homeassistant/switch/women3/relay8/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 155,
+    "name": "F27",
+    "command_topic": "homeassistant/switch/women3/relay1/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  },
+  {
+    "id": 156,
+    "name": "F28",
+    "command_topic": "homeassistant/switch/women3/relay2/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "maintenance"
+  },
+  {
+    "id": 157,
+    "name": "F29",
+    "command_topic": "homeassistant/switch/women3/relay3/set",
+    "protocol": "aywana",
+    "gender": "women",
+    "status": "available"
+  }
+]

@@ -208,8 +208,8 @@
       const locker = params.get('locker');
       const token = params.get('token');
 
-      if (locker && !isNaN(parseInt(locker, 10)) && token) {
-        state.lockerId = parseInt(locker, 10);
+      if (locker && token) {
+        state.lockerId = locker.toString().trim();
         state.token = token;
         
         // Cache locally
@@ -433,7 +433,7 @@
         const token = url.searchParams.get('token');
         
         if (locker && token) {
-          state.lockerId = parseInt(locker, 10);
+          state.lockerId = locker.toString().trim();
           state.token = token;
           
           localStorage.setItem('lockerId', state.lockerId);

@@ -2,8 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const mqtt = require('mqtt');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { db, dbReady } = require('./database');
 require('dotenv').config();
+
+const lockersConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'lockers_config.json'), 'utf8'));
 
 const app = express();
 
@@ -108,7 +112,7 @@ function logAccess(lockerId, action, status, ip, isFlagged = 0, flagReason = nul
 
 // GET /api/reception/lockers
 app.get('/api/reception/lockers', authorizeReception, (req, res) => {
-  db.all('SELECT * FROM lockers ORDER BY id ASC', [], (err, rows) => {
+  db.all("SELECT * FROM lockers ORDER BY SUBSTR(id, 1, 1) DESC, CAST(SUBSTR(id, 2) AS INTEGER) ASC", [], (err, rows) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Database error reading lockers.' });
     }
@@ -119,12 +123,11 @@ app.get('/api/reception/lockers', authorizeReception, (req, res) => {
 // POST /api/reception/assign (Generate Token and occupy locker)
 app.post('/api/reception/assign', authorizeReception, (req, res) => {
   const { lockerId } = req.body;
+  const cleanLockerId = lockerId ? lockerId.toString().trim() : '';
 
-  if (!lockerId || isNaN(parseInt(lockerId, 10))) {
+  if (!cleanLockerId) {
     return res.status(400).json({ success: false, message: 'Invalid or missing Locker ID.' });
   }
-
-  const cleanLockerId = parseInt(lockerId, 10);
   
   // Generate a secure 16-character token
   const accessToken = crypto.randomBytes(8).toString('hex');
@@ -153,12 +156,11 @@ app.post('/api/reception/assign', authorizeReception, (req, res) => {
 // POST /api/reception/release (Clear token and free locker)
 app.post('/api/reception/release', authorizeReception, (req, res) => {
   const { lockerId } = req.body;
+  const cleanLockerId = lockerId ? lockerId.toString().trim() : '';
 
-  if (!lockerId || isNaN(parseInt(lockerId, 10))) {
+  if (!cleanLockerId) {
     return res.status(400).json({ success: false, message: 'Invalid or missing Locker ID.' });
   }
-
-  const cleanLockerId = parseInt(lockerId, 10);
 
   db.run(
     "UPDATE lockers SET status = 'available', access_token = NULL, assigned_at = NULL WHERE id = ?",
@@ -181,14 +183,16 @@ app.post('/api/auto-assign', (req, res) => {
     return res.status(400).json({ success: false, message: 'Gender selection is required.' });
   }
 
-  // Define ranges based on gender: Male is 1-15, Female is 16-32
-  let minId = gender === 'male' ? 1 : 16;
-  let maxId = gender === 'male' ? 15 : 32;
+  // Query available lockers using SQLite pattern matching:
+  // Male lockers start with 'M', Female lockers start with 'F'.
+  // We order them by their numeric suffix.
+  const query = gender === 'male' 
+    ? "SELECT * FROM lockers WHERE id LIKE 'M%' AND status = 'available' ORDER BY CAST(SUBSTR(id, 2) AS INTEGER) ASC LIMIT 1"
+    : "SELECT * FROM lockers WHERE id LIKE 'F%' AND status = 'available' ORDER BY CAST(SUBSTR(id, 2) AS INTEGER) ASC LIMIT 1";
 
-  // Find the first available locker in the category range
   db.get(
-    "SELECT * FROM lockers WHERE id >= ? AND id <= ? AND status = 'available' ORDER BY id ASC LIMIT 1",
-    [minId, maxId],
+    query,
+    [],
     (err, locker) => {
       if (err) {
         console.error('Database query error during auto-assign:', err.message);
@@ -240,12 +244,11 @@ app.post('/api/auto-assign', (req, res) => {
 app.post('/api/client-release', (req, res) => {
   const { lockerId, token } = req.body;
   const ip = req.ip || req.connection.remoteAddress;
+  const targetLockerId = lockerId ? lockerId.toString().trim() : '';
 
-  if (!lockerId || isNaN(parseInt(lockerId, 10)) || !token) {
+  if (!targetLockerId || !token) {
     return res.status(400).json({ success: false, message: 'Locker ID and token are required.' });
   }
-
-  const targetLockerId = parseInt(lockerId, 10);
 
   db.get('SELECT * FROM lockers WHERE id = ?', [targetLockerId], async (err, locker) => {
     if (err || !locker) {
@@ -277,15 +280,14 @@ app.post('/api/client-release', (req, res) => {
 app.post('/api/unlock-locker', (req, res) => {
   const { lockerId, token } = req.body;
   const ip = req.ip || req.connection.remoteAddress;
+  const targetLockerId = lockerId ? lockerId.toString().trim() : '';
 
-  if (!lockerId || isNaN(parseInt(lockerId, 10)) || !token) {
+  if (!targetLockerId || !token) {
     return res.status(400).json({
       success: false,
       message: 'Locker ID and access token are required.'
     });
   }
-
-  const targetLockerId = parseInt(lockerId, 10);
 
   // Validate the access token matches the occupied locker
   db.get('SELECT * FROM lockers WHERE id = ?', [targetLockerId], async (err, locker) => {
@@ -348,13 +350,24 @@ app.post('/api/unlock-locker', (req, res) => {
         }
 
         // Generate MQTT command parameters
-        const topic = config.MQTT_TOPIC_TEMPLATE.replace('{id}', targetLockerId.toString());
-        const payload = JSON.stringify({
+        let topic = config.MQTT_TOPIC_TEMPLATE.replace('{id}', targetLockerId);
+        let payload = JSON.stringify({
           action: 'unlock',
           id: targetLockerId,
           operator: 'token_client',
           timestamp: Date.now()
         });
+
+        // Map locker to lockers_config.json settings
+        const lockerMeta = lockersConfig.find(l => l.name === targetLockerId);
+        if (lockerMeta && lockerMeta.command_topic) {
+          topic = lockerMeta.command_topic;
+          if (lockerMeta.protocol === 'aywana') {
+            payload = 'ON';
+          } else if (lockerMeta.protocol === 'rubik') {
+            payload = JSON.stringify({ cmd: 'openlock', lock: lockerMeta.id });
+          }
+        }
 
         mqttClient.publish(topic, payload, { qos: 1 }, async (error) => {
           if (error) {
@@ -386,12 +399,11 @@ app.post('/api/unlock-locker', (req, res) => {
 // GET /api/verify-token (Verify if a token is still active and valid)
 app.get('/api/verify-token', (req, res) => {
   const { locker, token } = req.query;
+  const targetLockerId = locker ? locker.toString().trim() : '';
 
-  if (!locker || isNaN(parseInt(locker, 10)) || !token) {
+  if (!targetLockerId || !token) {
     return res.status(400).json({ success: false, message: 'Locker ID and token are required.' });
   }
-
-  const targetLockerId = parseInt(locker, 10);
 
   db.get('SELECT * FROM lockers WHERE id = ?', [targetLockerId], (err, lockerRow) => {
     if (err || !lockerRow) {
@@ -421,12 +433,11 @@ app.get('/api/generate-pass', async (req, res) => {
   const { PKPass } = require('passkit-generator');
 
   const { locker, token } = req.query;
+  const targetLockerId = locker ? locker.toString().trim() : '';
 
-  if (!locker || isNaN(parseInt(locker, 10)) || !token) {
+  if (!targetLockerId || !token) {
     return res.status(400).send('Locker ID and token are required.');
   }
-
-  const targetLockerId = parseInt(locker, 10);
 
   // Validate database status first
   db.get('SELECT * FROM lockers WHERE id = ?', [targetLockerId], async (err, lockerRow) => {

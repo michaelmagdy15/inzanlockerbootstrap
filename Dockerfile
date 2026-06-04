@@ -16,6 +16,7 @@ RUN npm ci --only=production
 # Copy application source files
 COPY server.js ./
 COPY database.js ./
+COPY lockers_config.json ./
 COPY public/ ./public/
 
 # Expose default port
