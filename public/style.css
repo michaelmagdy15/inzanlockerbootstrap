@@ -1321,3 +1321,158 @@ body::before {
   align-items: center;
   gap: 14px;
 }
+
+/* Self-Service Gender Selection UI */
+.self-service-card {
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.self-service-card h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #ffffff, #9ca3af);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.self-service-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 28px;
+}
+
+.gender-selection-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.gender-btn {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 24px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.gender-icon {
+  font-size: 32px;
+  transition: transform 0.3s ease;
+}
+
+.gender-label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+/* Male Specific Button Style */
+.gender-btn.male:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(0, 240, 255, 0.05) 100%);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+  transform: translateY(-4px);
+}
+
+.gender-btn.male:hover .gender-icon {
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* Female Specific Button Style */
+.gender-btn.female:hover {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(244, 63, 94, 0.05) 100%);
+  border-color: #ec4899;
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.25);
+  transform: translateY(-4px);
+}
+
+.gender-btn.female:hover .gender-icon {
+  transform: scale(1.15) rotate(-5deg);
+}
+
+.gender-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Secondary Action / Divider */
+.self-service-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.divider-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.scan-btn-secondary {
+  width: 100%;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.scan-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Self-Service Loading Overlay state */
+.self-service-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 20px;
+}
+
+.self-service-loading .spinner {
+  width: 40px;
+  height: 40px;
+}
+
+.self-service-loading .spinner .path {
+  stroke: var(--accent-cyan);
+}
+
+.loading-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+

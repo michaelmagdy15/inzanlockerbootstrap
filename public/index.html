@@ -31,15 +31,44 @@
     <!-- Main Card Content -->
     <main class="pass-wrapper" id="main-pass-screen">
       
-      <!-- SCAN TO INITIALIZE CARD (Shown when no token is present) -->
-      <div class="glass-card error-card scan-init-card" id="access-error-card">
-        <div class="error-icon">🎫</div>
-        <h2>Access Pass Required</h2>
-        <p>No active locker assignment was found on this phone. Please scan the QR code displayed at reception to load your locker ticket.</p>
-        <button class="submit-btn scan-btn" id="start-scan-btn">
-          📷 Scan Assignment QR
-        </button>
+      <!-- SELF-SERVICE LOCKER SELECTION CARD (Shown when no token is present) -->
+      <div class="glass-card self-service-card" id="access-error-card">
+        <div id="self-service-selection">
+          <div class="error-icon">🥋</div>
+          <h2>Self-Service Locker</h2>
+          <p class="self-service-subtitle">Tap your category to automatically assign yourself a locker:</p>
+          
+          <div class="gender-selection-container">
+            <button class="gender-btn male" id="btn-select-male">
+              <span class="gender-icon">♂️</span>
+              <span class="gender-label">Male</span>
+            </button>
+            <button class="gender-btn female" id="btn-select-female">
+              <span class="gender-icon">♀️</span>
+              <span class="gender-label">Female</span>
+            </button>
+          </div>
+
+          <div class="self-service-divider">
+            <div class="divider-line"></div>
+            <div class="divider-text">Or scan ticket</div>
+            <div class="divider-line"></div>
+          </div>
+
+          <button class="scan-btn-secondary" id="start-scan-btn">
+            📷 Scan Physical QR Code
+          </button>
+        </div>
+
+        <!-- Assignment Processing Screen -->
+        <div class="self-service-loading hidden" id="self-service-loading-state">
+          <svg class="spinner" viewBox="0 0 24 24">
+            <circle class="path" cx="12" cy="12" r="10" fill="none" stroke-width="3"></circle>
+          </svg>
+          <div class="loading-text" id="self-service-loading-text">Assigning available locker...</div>
+        </div>
       </div>
+
 
       <!-- ACTIVE LOCKER CARD (Shown when a token is cached and valid) -->
       <div class="digital-pass hidden" id="pass-card">
@@ -98,6 +127,10 @@
               🎫 Pass Details
             </button>
           </div>
+
+          <button class="wallet-btn release-session" id="client-release-btn" style="margin-top: 10px; width: 100%; border-color: rgba(239, 68, 68, 0.2); color: #f87171; background: rgba(239, 68, 68, 0.05); transition: all 0.2s ease;">
+            🔄 Finish Session & Free Locker
+          </button>
         </div>
       </div>
     </main>
@@ -147,6 +180,14 @@
     const startScanBtn = document.getElementById('start-scan-btn');
     const closeScannerBtn = document.getElementById('close-scanner-btn');
     const scannerStatus = document.getElementById('scanner-status');
+
+    // Self-Service Elements
+    const btnSelectMale = document.getElementById('btn-select-male');
+    const btnSelectFemale = document.getElementById('btn-select-female');
+    const selfServiceSelection = document.getElementById('self-service-selection');
+    const selfServiceLoadingState = document.getElementById('self-service-loading-state');
+    const selfServiceLoadingText = document.getElementById('self-service-loading-text');
+    const clientReleaseBtn = document.getElementById('client-release-btn');
 
     // Notify Toast
     function showToast(message, type = 'info') {
@@ -432,6 +473,91 @@
     
     startScanBtn.addEventListener('click', startCameraScanner);
     closeScannerBtn.addEventListener('click', stopCameraScanner);
+
+    // Auto Assignment Event Bindings
+    async function handleAutoAssignment(gender) {
+      selfServiceSelection.classList.add('hidden');
+      selfServiceLoadingState.classList.remove('hidden');
+      selfServiceLoadingText.innerText = `Assigning available ${gender === 'male' ? 'Male' : 'Female'} locker...`;
+
+      triggerHaptic([50, 50]);
+
+      try {
+        const response = await fetch('/api/auto-assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gender })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          state.lockerId = data.lockerId;
+          state.token = data.accessToken;
+
+          localStorage.setItem('lockerId', state.lockerId);
+          localStorage.setItem('token', state.token);
+
+          showToast(`Locker #${state.lockerId} successfully assigned!`, 'success');
+          triggerHaptic(300);
+
+          // Reset selection UI state
+          selfServiceSelection.classList.remove('hidden');
+          selfServiceLoadingState.classList.add('hidden');
+
+          await initApp();
+        } else {
+          throw new Error(data.message || 'Auto-assignment failed.');
+        }
+      } catch (err) {
+        console.error('Auto-assign failed:', err);
+        showToast(err.message || 'Server error during allocation.', 'error');
+        triggerHaptic([100, 50, 100]);
+
+        // Revert UI to selection screen
+        selfServiceSelection.classList.remove('hidden');
+        selfServiceLoadingState.classList.add('hidden');
+      }
+    }
+
+    btnSelectMale.addEventListener('click', () => handleAutoAssignment('male'));
+    btnSelectFemale.addEventListener('click', () => handleAutoAssignment('female'));
+
+    // Client Release Event Binding
+    async function handleClientRelease() {
+      if (!state.lockerId || !state.token) return;
+
+      if (!confirm(`Are you sure you want to finish your session and free Locker #${state.lockerId}?`)) {
+        return;
+      }
+
+      triggerHaptic([50, 50]);
+
+      try {
+        const response = await fetch('/api/client-release', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lockerId: state.lockerId, token: state.token })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          showToast(data.message || `Locker #${state.lockerId} released.`, 'success');
+          triggerHaptic(300);
+          clearCachedToken();
+          await initApp();
+        } else {
+          throw new Error(data.message || 'Failed to release locker.');
+        }
+      } catch (err) {
+        console.error('Client release failed:', err);
+        showToast(err.message || 'Server error during release.', 'error');
+        triggerHaptic([100, 50, 100]);
+      }
+    }
+
+    clientReleaseBtn.addEventListener('click', handleClientRelease);
 
     // Initial boot check
     initApp();

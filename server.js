@@ -172,6 +172,105 @@ app.post('/api/reception/release', authorizeReception, (req, res) => {
   );
 });
 
+// POST /api/auto-assign (Self-service locker allocation by gender)
+app.post('/api/auto-assign', (req, res) => {
+  const { gender } = req.body;
+  const ip = req.ip || req.connection.remoteAddress;
+
+  if (!gender || (gender !== 'male' && gender !== 'female')) {
+    return res.status(400).json({ success: false, message: 'Gender selection is required.' });
+  }
+
+  // Define ranges based on gender: Male is 1-15, Female is 16-30
+  let minId = gender === 'male' ? 1 : 16;
+  let maxId = gender === 'male' ? 15 : 30;
+
+  // Find the first available locker in the category range
+  db.get(
+    "SELECT * FROM lockers WHERE id >= ? AND id <= ? AND status = 'available' ORDER BY id ASC LIMIT 1",
+    [minId, maxId],
+    (err, locker) => {
+      if (err) {
+        console.error('Database query error during auto-assign:', err.message);
+        return res.status(500).json({ success: false, message: 'Database error finding an available locker.' });
+      }
+
+      if (!locker) {
+        return res.status(404).json({
+          success: false,
+          message: `All ${gender === 'male' ? 'Male' : 'Female'} lockers are currently occupied. Please see the reception desk.`
+        });
+      }
+
+      // Generate secure 16-character access token
+      const accessToken = crypto.randomBytes(8).toString('hex');
+      const assignedAt = Date.now();
+
+      // Allocate the locker in the database
+      db.run(
+        "UPDATE lockers SET status = 'occupied', access_token = ?, assigned_at = ? WHERE id = ? AND status = 'available'",
+        [accessToken, assignedAt, locker.id],
+        async function (updateErr) {
+          if (updateErr) {
+            console.error('Database update error during auto-assign:', updateErr.message);
+            return res.status(500).json({ success: false, message: 'Database error allocating locker.' });
+          }
+
+          // Handle potential concurrency update race condition
+          if (this.changes === 0) {
+            return res.status(409).json({ success: false, message: 'Locker allocation conflict. Please try again.' });
+          }
+
+          // Log the successful auto-assignment
+          await logAccess(locker.id, 'auto_assign', 'success', ip);
+
+          return res.status(200).json({
+            success: true,
+            message: `Locker #${locker.id} assigned successfully.`,
+            lockerId: locker.id,
+            accessToken
+          });
+        }
+      );
+    }
+  );
+});
+
+// POST /api/client-release (Allows client to release their own locker)
+app.post('/api/client-release', (req, res) => {
+  const { lockerId, token } = req.body;
+  const ip = req.ip || req.connection.remoteAddress;
+
+  if (!lockerId || isNaN(parseInt(lockerId, 10)) || !token) {
+    return res.status(400).json({ success: false, message: 'Locker ID and token are required.' });
+  }
+
+  const targetLockerId = parseInt(lockerId, 10);
+
+  db.get('SELECT * FROM lockers WHERE id = ?', [targetLockerId], async (err, locker) => {
+    if (err || !locker) {
+      return res.status(404).json({ success: false, message: 'Locker not found.' });
+    }
+
+    if (locker.status !== 'occupied' || locker.access_token !== token) {
+      return res.status(403).json({ success: false, message: 'Invalid or expired token.' });
+    }
+
+    db.run(
+      "UPDATE lockers SET status = 'available', access_token = NULL, assigned_at = NULL WHERE id = ?",
+      [targetLockerId],
+      async function (updateErr) {
+        if (updateErr) {
+          return res.status(500).json({ success: false, message: 'Database error releasing locker.' });
+        }
+
+        await logAccess(targetLockerId, 'client_release', 'success', ip);
+        return res.status(200).json({ success: true, message: `Locker #${targetLockerId} successfully released.` });
+      }
+    );
+  });
+});
+
 // ----------------- CLIENT UNLOCK API -----------------
 
 // POST /api/unlock-locker
