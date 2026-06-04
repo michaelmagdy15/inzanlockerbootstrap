@@ -218,7 +218,7 @@
       }
     }
 
-    // Render 30 Lockers status blocks
+    // Render 32 Lockers status blocks
     function renderGrid() {
       lockerGrid.innerHTML = '';
       
@@ -243,6 +243,11 @@
           assignBtn.innerText = 'Assign';
           assignBtn.onclick = () => assignLocker(locker.id);
           lockerAction.appendChild(assignBtn);
+        } else if (locker.status === 'maintenance') {
+          const maintenanceText = document.createElement('span');
+          maintenanceText.className = 'grid-maintenance-text';
+          maintenanceText.innerText = 'MAINTENANCE';
+          lockerAction.appendChild(maintenanceText);
         } else {
           const actionGroup = document.createElement('div');
           actionGroup.className = 'grid-action-group';

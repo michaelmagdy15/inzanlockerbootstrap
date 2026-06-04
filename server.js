@@ -181,9 +181,9 @@ app.post('/api/auto-assign', (req, res) => {
     return res.status(400).json({ success: false, message: 'Gender selection is required.' });
   }
 
-  // Define ranges based on gender: Male is 1-15, Female is 16-30
+  // Define ranges based on gender: Male is 1-15, Female is 16-32
   let minId = gender === 'male' ? 1 : 16;
-  let maxId = gender === 'male' ? 15 : 30;
+  let maxId = gender === 'male' ? 15 : 32;
 
   // Find the first available locker in the category range
   db.get(

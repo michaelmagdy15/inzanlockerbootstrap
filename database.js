@@ -68,18 +68,21 @@ function seedLockers() {
       return;
     }
 
+    const maintenanceLockers = [1, 2, 4, 8, 12, 16, 22, 23, 29, 32];
+
     if (row.count === 0) {
-      console.log('Initializing 30 gym lockers in SQLite database...');
+      console.log('Initializing 32 gym lockers in SQLite database...');
       
       const insertStmt = db.prepare('INSERT INTO lockers (id, status, access_token, assigned_at) VALUES (?, ?, ?, ?)');
       
-      for (let i = 1; i <= 30; i++) {
-        insertStmt.run([i, 'available', null, null]);
+      for (let i = 1; i <= 32; i++) {
+        const status = maintenanceLockers.includes(i) ? 'maintenance' : 'available';
+        insertStmt.run([i, status, null, null]);
       }
       
       insertStmt.finalize((err) => {
         if (err) console.error('Failed to initialize locker rows:', err.message);
-        else console.log('Successfully initialized 30 lockers (Locker #1 to #30) as available.');
+        else console.log('Successfully initialized 32 lockers (Locker #1 to #32) with maintenance flags.');
       });
     }
   });
