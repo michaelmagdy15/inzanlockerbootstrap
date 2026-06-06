@@ -297,64 +297,125 @@
 
       state.isUnlocking = true;
       unlockBtn.setAttribute('disabled', 'true');
-      btnText.innerText = 'Transmitting Command...';
+      btnText.innerText = 'Verifying Location...';
       btnSpinner.classList.remove('hidden');
       
-      lockBadge.innerText = 'DISPATCHING';
+      lockBadge.innerText = 'LOCATING';
       lockBadge.className = 'lock-badge pending';
 
-      triggerHaptic([50, 50, 50]);
+      triggerHaptic([50, 50]);
 
-      try {
-        const response = await fetch('/api/unlock-locker', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lockerId: state.lockerId, token: state.token })
-        });
+      if (!navigator.geolocation) {
+        showLocationError('Browser does not support GPS location services.');
+        return;
+      }
 
-        const data = await response.json();
+      const geoOptions = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      };
 
-        if (response.ok && data.success) {
-          lockBadge.innerText = 'UNLOCKED';
-          lockBadge.className = 'lock-badge unlocked';
-          btnText.innerText = 'Locker Unlocked!';
-          showToast(data.message || `Locker #${state.lockerId} unlocked!`, 'success');
-          
-          triggerHaptic(500);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
 
-          setTimeout(() => {
-            lockBadge.innerText = 'LOCKED';
-            lockBadge.className = 'lock-badge locked';
-            btnText.innerText = `Tap to Unlock Locker #${state.lockerId}`;
-            unlockBtn.removeAttribute('disabled');
-            state.isUnlocking = false;
-          }, 5000);
-        } else {
-          throw new Error(data.message || 'Locker validation failed.');
-        }
+          btnText.innerText = 'Transmitting Command...';
+          lockBadge.innerText = 'DISPATCHING';
 
-      } catch (err) {
-        console.error('Unlock trigger failed:', err);
-        lockBadge.innerText = 'FAILED';
-        lockBadge.className = 'lock-badge failed';
-        btnText.innerText = 'Tap to Retry';
-        showToast(err.message || 'Broker connection failed.', 'error');
-        
-        triggerHaptic([100, 50, 100, 50, 100]);
-        
-        setTimeout(() => {
-          lockBadge.innerText = 'LOCKED';
-          lockBadge.className = 'lock-badge locked';
-          unlockBtn.removeAttribute('disabled');
-          state.isUnlocking = false;
-        }, 3000);
+          try {
+            const response = await fetch('/api/unlock-locker', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                lockerId: state.lockerId, 
+                token: state.token,
+                lat: lat,
+                lon: lon
+              })
+            });
 
-        // Check if token expired on backend during transaction
-        if (err.message.includes('expired') || err.message.includes('Invalid')) {
-          setTimeout(() => initApp(), 2500);
-        }
-      } finally {
-        btnSpinner.classList.add('hidden');
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              lockBadge.innerText = 'UNLOCKED';
+              lockBadge.className = 'lock-badge unlocked';
+              btnText.innerText = 'Locker Unlocked!';
+              showToast(data.message || `Locker #${state.lockerId} unlocked!`, 'success');
+              
+              triggerHaptic(500);
+
+              setTimeout(() => {
+                lockBadge.innerText = 'LOCKED';
+                lockBadge.className = 'lock-badge locked';
+                btnText.innerText = `Tap to Unlock Locker #${state.lockerId}`;
+                unlockBtn.removeAttribute('disabled');
+                state.isUnlocking = false;
+              }, 5000);
+            } else {
+              throw new Error(data.message || 'Locker validation failed.');
+            }
+
+          } catch (err) {
+            handleUnlockError(err);
+          } finally {
+            btnSpinner.classList.add('hidden');
+          }
+        },
+        (error) => {
+          btnSpinner.classList.add('hidden');
+          let errorMsg = 'GPS location error.';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg = 'Location permission denied. Please allow GPS access to unlock lockers.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg = 'GPS signal unavailable. Move closer to the locker room center.';
+              break;
+            case error.TIMEOUT:
+              errorMsg = 'GPS request timed out. Please try again.';
+              break;
+          }
+          showLocationError(errorMsg);
+        },
+        geoOptions
+      );
+    }
+
+    function showLocationError(msg) {
+      lockBadge.innerText = 'DENIED';
+      lockBadge.className = 'lock-badge failed';
+      btnText.innerText = 'Tap to Retry';
+      showToast(msg, 'error');
+      triggerHaptic([100, 50, 100]);
+      setTimeout(() => {
+        lockBadge.innerText = 'LOCKED';
+        lockBadge.className = 'lock-badge locked';
+        unlockBtn.removeAttribute('disabled');
+        state.isUnlocking = false;
+      }, 3500);
+    }
+
+    function handleUnlockError(err) {
+      console.error('Unlock trigger failed:', err);
+      lockBadge.innerText = 'FAILED';
+      lockBadge.className = 'lock-badge failed';
+      btnText.innerText = 'Tap to Retry';
+      showToast(err.message || 'Broker connection failed.', 'error');
+      
+      triggerHaptic([100, 50, 100, 50, 100]);
+      
+      setTimeout(() => {
+        lockBadge.innerText = 'LOCKED';
+        lockBadge.className = 'lock-badge locked';
+        unlockBtn.removeAttribute('disabled');
+        state.isUnlocking = false;
+      }, 3000);
+
+      // Check if token expired on backend during transaction
+      if (err.message.includes('expired') || err.message.includes('Invalid')) {
+        setTimeout(() => initApp(), 2500);
       }
     }
 

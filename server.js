@@ -276,9 +276,30 @@ app.post('/api/client-release', (req, res) => {
 
 // ----------------- CLIENT UNLOCK API -----------------
 
+// Gym Location Coordinates (Inzan Athletics)
+const GYM_LAT = 30.046123;
+const GYM_LON = 31.483873;
+const MAX_DISTANCE_METERS = 50; // Allow 50m radius due to indoor GPS deviations
+
+// Haversine formula to calculate distance in meters between two coordinates
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Earth radius in meters
+  const phi1 = lat1 * Math.PI / 180;
+  const phi2 = lat2 * Math.PI / 180;
+  const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+  const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+            Math.cos(phi1) * Math.cos(phi2) *
+            Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c; // in meters
+}
+
 // POST /api/unlock-locker
 app.post('/api/unlock-locker', (req, res) => {
-  const { lockerId, token } = req.body;
+  const { lockerId, token, lat, lon } = req.body;
   const ip = req.ip || req.connection.remoteAddress;
   const targetLockerId = lockerId ? lockerId.toString().trim() : '';
 
@@ -286,6 +307,25 @@ app.post('/api/unlock-locker', (req, res) => {
     return res.status(400).json({
       success: false,
       message: 'Locker ID and access token are required.'
+    });
+  }
+
+  // Validate geofence coordinates
+  if (lat === undefined || lon === undefined) {
+    return res.status(400).json({
+      success: false,
+      message: 'Location coordinates are required to unlock your locker. Please enable location services on your device.'
+    });
+  }
+
+  const distance = getDistance(parseFloat(lat), parseFloat(lon), GYM_LAT, GYM_LON);
+  if (distance > MAX_DISTANCE_METERS) {
+    console.warn(`[GEOFENCE BLOCKED] Locker #${targetLockerId} unlock attempt blocked from IP ${ip}. Distance: ${Math.round(distance)}m`);
+    // Log the geofence failure event in the database access logs
+    logAccess(targetLockerId, 'unlock', 'failed_geofence', ip, 1, `Blocked by geofence (Distance: ${Math.round(distance)}m)`);
+    return res.status(403).json({
+      success: false,
+      message: `Access Denied: You must be physically inside the gym to unlock your locker. (Distance: ${Math.round(distance)}m)`
     });
   }
 
