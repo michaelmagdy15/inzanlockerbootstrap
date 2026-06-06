@@ -174,6 +174,111 @@ app.post('/api/reception/release', authorizeReception, (req, res) => {
   );
 });
 
+// POST /api/reception/unlock (Admin override direct unlock)
+app.post('/api/reception/unlock', authorizeReception, (req, res) => {
+  const { lockerId } = req.body;
+  const cleanLockerId = lockerId ? lockerId.toString().trim() : '';
+  const ip = req.ip || req.connection.remoteAddress;
+
+  if (!cleanLockerId) {
+    return res.status(400).json({ success: false, message: 'Invalid or missing Locker ID.' });
+  }
+
+  const lockerMeta = lockersConfig.find(l => l.name === cleanLockerId);
+  if (!lockerMeta) {
+    return res.status(404).json({ success: false, message: 'Locker configuration not found.' });
+  }
+
+  if (!mqttClient || !mqttClient.connected) {
+    logAccess(cleanLockerId, 'admin_unlock', 'failed_no_broker', ip);
+    return res.status(503).json({
+      success: false,
+      message: 'Middleware cannot connect to MQTT Broker. Please check connection.'
+    });
+  }
+
+  let topic = config.MQTT_TOPIC_TEMPLATE.replace('{id}', cleanLockerId);
+  let payload = JSON.stringify({
+    action: 'unlock',
+    id: cleanLockerId,
+    operator: 'admin_console',
+    timestamp: Date.now()
+  });
+
+  if (lockerMeta.command_topic) {
+    topic = lockerMeta.command_topic;
+    if (lockerMeta.protocol === 'aywana') {
+      payload = 'ON';
+    } else if (lockerMeta.protocol === 'rubik') {
+      payload = JSON.stringify({ cmd: 'openlock', lock: lockerMeta.id });
+    }
+  }
+
+  mqttClient.publish(topic, payload, { qos: 1 }, async (error) => {
+    if (error) {
+      console.error(`Admin failed to publish unlock for locker #${cleanLockerId}:`, error);
+      await logAccess(cleanLockerId, 'admin_unlock', 'failed_broker_error', ip);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to transmit unlock command to local broker.'
+      });
+    }
+
+    if (lockerMeta.protocol === 'aywana') {
+      setTimeout(() => {
+        console.log(`[Admin Override] Auto-pulsing OFF for locker ${cleanLockerId} on topic ${topic}...`);
+        mqttClient.publish(topic, 'OFF', { qos: 1 }, (err) => {
+          if (err) {
+            console.error(`[Admin Override] Failed to auto-pulse OFF:`, err);
+          }
+        });
+      }, 2000);
+    }
+
+    await logAccess(cleanLockerId, 'admin_unlock', 'success', ip);
+    return res.status(200).json({
+      success: true,
+      message: `Locker #${cleanLockerId} successfully unlocked by administrator.`
+    });
+  });
+});
+
+// POST /api/reception/maintenance (Toggle locker maintenance mode)
+app.post('/api/reception/maintenance', authorizeReception, (req, res) => {
+  const { lockerId, maintenance } = req.body;
+  const cleanLockerId = lockerId ? lockerId.toString().trim() : '';
+  const ip = req.ip || req.connection.remoteAddress;
+
+  if (!cleanLockerId || maintenance === undefined) {
+    return res.status(400).json({ success: false, message: 'Locker ID and maintenance state (true/false) are required.' });
+  }
+
+  const newStatus = maintenance ? 'maintenance' : 'available';
+
+  db.run(
+    "UPDATE lockers SET status = ? WHERE id = ? AND status IN ('available', 'maintenance')",
+    [newStatus, cleanLockerId],
+    async function (err) {
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Database error updating locker status.' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Locker is currently occupied or not found. Please release it before changing maintenance status.' 
+        });
+      }
+
+      await logAccess(cleanLockerId, maintenance ? 'maint_enable' : 'maint_disable', 'success', ip);
+      return res.status(200).json({ 
+        success: true, 
+        message: `Locker #${cleanLockerId} is now ${newStatus === 'maintenance' ? 'under maintenance' : 'active and available'}.` 
+      });
+    }
+  );
+});
+
 // POST /api/auto-assign (Self-service locker allocation by gender)
 app.post('/api/auto-assign', (req, res) => {
   const { gender } = req.body;

@@ -244,32 +244,78 @@
         lockerAction.className = 'locker-grid-action';
 
         if (locker.status === 'available') {
+          const actionGroup = document.createElement('div');
+          actionGroup.className = 'grid-action-group';
+          actionGroup.style.display = 'flex';
+          actionGroup.style.gap = '8px';
+
           const assignBtn = document.createElement('button');
           assignBtn.className = 'grid-action-btn assign';
+          assignBtn.style.flex = '3';
           assignBtn.innerText = 'Assign';
           assignBtn.onclick = () => assignLocker(locker.id);
-          lockerAction.appendChild(assignBtn);
+
+          const maintBtn = document.createElement('button');
+          maintBtn.className = 'grid-action-btn view-pass';
+          maintBtn.style.flex = '1';
+          maintBtn.innerText = '🛠️';
+          maintBtn.title = 'Put in Maintenance';
+          maintBtn.onclick = () => toggleMaintenance(locker.id, true);
+
+          actionGroup.appendChild(assignBtn);
+          actionGroup.appendChild(maintBtn);
+          lockerAction.appendChild(actionGroup);
         } else if (locker.status === 'maintenance') {
+          const actionGroup = document.createElement('div');
+          actionGroup.className = 'grid-action-group';
+          actionGroup.style.display = 'flex';
+          actionGroup.style.flexDirection = 'column';
+          actionGroup.style.gap = '8px';
+
           const maintenanceText = document.createElement('span');
           maintenanceText.className = 'grid-maintenance-text';
-          maintenanceText.innerText = 'MAINTENANCE';
-          lockerAction.appendChild(maintenanceText);
+          maintenanceText.innerText = '🛠️ MAINTENANCE';
+
+          const activateBtn = document.createElement('button');
+          activateBtn.className = 'grid-action-btn assign';
+          activateBtn.innerText = 'Activate Locker';
+          activateBtn.onclick = () => toggleMaintenance(locker.id, false);
+
+          actionGroup.appendChild(maintenanceText);
+          actionGroup.appendChild(activateBtn);
+          lockerAction.appendChild(actionGroup);
         } else {
           const actionGroup = document.createElement('div');
           actionGroup.className = 'grid-action-group';
-          
+          actionGroup.style.display = 'flex';
+          actionGroup.style.flexDirection = 'column';
+          actionGroup.style.gap = '8px';
+
+          const unlockBtn = document.createElement('button');
+          unlockBtn.className = 'grid-action-btn assign';
+          unlockBtn.innerText = '🔓 Unlock';
+          unlockBtn.onclick = () => unlockLockerAdmin(locker.id);
+
+          const subActionGroup = document.createElement('div');
+          subActionGroup.className = 'grid-action-group';
+          subActionGroup.style.display = 'flex';
+          subActionGroup.style.gap = '8px';
+          subActionGroup.style.width = '100%';
+
           const releaseBtn = document.createElement('button');
           releaseBtn.className = 'grid-action-btn release';
           releaseBtn.innerText = 'Release';
           releaseBtn.onclick = () => releaseLocker(locker.id);
-          
+
           const viewPassBtn = document.createElement('button');
           viewPassBtn.className = 'grid-action-btn view-pass';
           viewPassBtn.innerText = 'Pass';
           viewPassBtn.onclick = () => showAssignmentPass(locker.id, locker.access_token);
-          
-          actionGroup.appendChild(releaseBtn);
-          actionGroup.appendChild(viewPassBtn);
+
+          subActionGroup.appendChild(releaseBtn);
+          subActionGroup.appendChild(viewPassBtn);
+          actionGroup.appendChild(unlockBtn);
+          actionGroup.appendChild(subActionGroup);
           lockerAction.appendChild(actionGroup);
         }
 
@@ -319,6 +365,48 @@
         loadLockers();
       } else {
         showToast(data.message || 'Locker release failed.', 'error');
+      }
+    }
+
+    // Direct Admin Unlock (Bypasses Geofencing)
+    async function unlockLockerAdmin(lockerId) {
+      showToast(`Transmitting direct unlock command for Locker #${lockerId}...`, 'info');
+
+      const res = await adminFetch('/api/reception/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockerId })
+      });
+
+      if (!res) return;
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        showToast(data.message || `Locker #${lockerId} unlocked successfully!`, 'success');
+      } else {
+        showToast(data.message || 'Failed to trigger unlock.', 'error');
+      }
+    }
+
+    // Toggle Maintenance Mode
+    async function toggleMaintenance(lockerId, maintenance) {
+      const actionText = maintenance ? 'put into maintenance' : 'reactivate';
+      if (!confirm(`Are you sure you want to ${actionText} Locker #${lockerId}?`)) return;
+
+      const res = await adminFetch('/api/reception/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockerId, maintenance })
+      });
+
+      if (!res) return;
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        showToast(data.message || `Locker status updated.`, 'success');
+        loadLockers();
+      } else {
+        showToast(data.message || 'Failed to update maintenance status.', 'error');
       }
     }
 
