@@ -1,15 +1,15 @@
 :root {
-  --bg-primary: #090a0f;
-  --bg-secondary: #141622;
-  --card-bg: rgba(26, 29, 46, 0.7);
-  --accent-cyan: #00f0ff;
-  --accent-blue: #3b82f6;
+  --bg-primary: #000000;
+  --bg-secondary: #0d0d0d;
+  --card-bg: rgba(18, 18, 18, 0.75);
+  --accent-cyan: #ffffff;
+  --accent-blue: #ffffff;
   --accent-green: #10b981;
   --accent-orange: #f59e0b;
   --accent-red: #ef4444;
   --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --border-color: rgba(255, 255, 255, 0.08);
+  --text-secondary: #a3a3a3;
+  --border-color: rgba(255, 255, 255, 0.09);
 }
 
 * {
@@ -31,16 +31,15 @@ body {
   padding: 16px;
 }
 
-/* Background Gradients */
+/* Background Gradients - Ultra premium matte black theme */
 body::before {
   content: '';
   position: absolute;
-  top: -20%;
-  left: -20%;
-  width: 140%;
-  height: 140%;
-  background: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-              radial-gradient(circle at 90% 90%, rgba(0, 240, 255, 0.12) 0%, transparent 40%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
   z-index: -1;
   pointer-events: none;
 }
@@ -64,27 +63,51 @@ body::before {
 .logo-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  background-color: var(--accent-cyan);
+.gym-pfp {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  box-shadow: 0 0 12px var(--accent-cyan);
-  animation: pulse 2s infinite;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
 }
 
-.logo-text {
-  font-weight: 800;
-  font-size: 20px;
-  letter-spacing: 1px;
+.pfp-text {
+  font-family: 'Syncopate', sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 2px;
+  text-indent: 2px;
 }
 
-.highlight {
-  color: var(--accent-cyan);
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+.brand-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.logo-text-primary {
+  font-family: 'Syncopate', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 4px;
+}
+
+.logo-text-sub {
+  font-family: 'Outfit', sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+  color: #888888;
+  letter-spacing: 3px;
+  margin-top: 1px;
 }
 
 .system-status {
@@ -281,18 +304,18 @@ body::before {
 .unlock-btn {
   width: 100%;
   height: 60px;
-  background: linear-gradient(135deg, var(--accent-blue) 0%, #1d4ed8 100%);
-  color: #ffffff;
-  border: none;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -300,7 +323,8 @@ body::before {
 
 .unlock-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.4);
+  background: #f3f4f6;
+  box-shadow: 0 6px 24px rgba(255, 255, 255, 0.15);
 }
 
 .unlock-btn:active:not(:disabled) {
@@ -308,8 +332,9 @@ body::before {
 }
 
 .unlock-btn:disabled {
-  background: #374151;
-  color: var(--text-secondary);
+  background: #121212;
+  color: #555555;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -455,8 +480,8 @@ body::before {
 .submit-btn {
   padding: 0 16px;
   height: 44px;
-  background: var(--accent-blue);
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -466,7 +491,7 @@ body::before {
 }
 
 .submit-btn:hover {
-  background: #2563eb;
+  background: #e5e7eb;
 }
 
 /* Toast System styling */
@@ -520,15 +545,15 @@ body::before {
 @keyframes pulse {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
   }
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(0, 240, 255, 0);
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
   }
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
   }
 }
 
@@ -867,13 +892,13 @@ body::before {
 }
 
 .grid-action-btn.assign {
-  background: var(--accent-cyan);
+  background: #ffffff;
   color: #000000;
 }
 
 .grid-action-btn.assign:hover {
-  background: #33f3ff;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  background: #f3f4f6;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
 .grid-action-group {
@@ -1263,9 +1288,9 @@ body::before {
 }
 
 .settings-toggle-btn:hover {
-  background: rgba(0, 240, 255, 0.1);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
 }
 
 .settings-modal-content {
@@ -1324,9 +1349,9 @@ body::before {
 
 .form-field input:focus {
   outline: none;
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
-  background: rgba(20, 22, 34, 0.95);
+  border-color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+  background: rgba(12, 12, 12, 0.95);
 }
 
 .form-divider {
@@ -1406,10 +1431,14 @@ body::before {
 
 /* Male Specific Button Style */
 .gender-btn.male:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(0, 240, 255, 0.05) 100%);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+  background: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
   transform: translateY(-4px);
+}
+
+.gender-btn.male:hover .gender-label {
+  color: #000000;
 }
 
 .gender-btn.male:hover .gender-icon {
@@ -1418,10 +1447,14 @@ body::before {
 
 /* Female Specific Button Style */
 .gender-btn.female:hover {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(244, 63, 94, 0.05) 100%);
-  border-color: #ec4899;
-  box-shadow: 0 0 20px rgba(236, 72, 153, 0.25);
+  background: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
   transform: translateY(-4px);
+}
+
+.gender-btn.female:hover .gender-label {
+  color: #000000;
 }
 
 .gender-btn.female:hover .gender-icon {
