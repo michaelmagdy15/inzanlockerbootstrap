@@ -1,0 +1,5 @@
+{
+  "pinggy_token": "YOUR_PINGGY_TOKEN_HERE",
+  "local_broker_host": "192.168.10.31",
+  "local_broker_port": 1883
+}
