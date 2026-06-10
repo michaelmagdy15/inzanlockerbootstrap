@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Inzan Athletics - Onboarding Pass</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container pwa-mobile-container">
+    <header class="header">
+      <div class="logo-container">
+        <div class="pulse-dot"></div>
+        <span class="logo-text">INZAN<span class="highlight">ATHLETICS</span></span>
+      </div>
+      <div class="system-status">
+        <span class="status-indicator online"></span>
+        <span class="status-text">Pass Center</span>
+      </div>
+    </header>
+
+    <main class="pass-wrapper">
+      <div class="glass-card" style="padding: 24px; text-align: center;">
+        <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-cyan);">Locker Pass Portal</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">Enter your Member credentials to issue your smartphone Locker Pass ticket:</p>
+
+        <form id="passForm" style="display: flex; flex-direction: column; gap: 16px; text-align: left;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">MEMBER ID</label>
+            <input type="text" id="memberId" required placeholder="e.g. MEM-001" style="background: rgba(20, 22, 34, 0.8); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-primary); font-family: inherit; font-size: 14px;">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">LAST NAME</label>
+            <input type="text" id="lastName" required placeholder="e.g. Smith" style="background: rgba(20, 22, 34, 0.8); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-primary); font-family: inherit; font-size: 14px;">
+          </div>
+
+          <button type="submit" class="submit-btn" style="height: 48px; border-radius: 8px; font-weight: 800; cursor: pointer; border: none; background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%); color: #000; box-shadow: 0 4px 15px rgba(0, 240, 255, 0.25); text-transform: uppercase; font-size: 13px; letter-spacing: 0.05em; display: flex; justify-content: center; align-items: center;">
+            Generate pass
+          </button>
+        </form>
+
+        <div id="errorMsg" class="hidden" style="margin-top: 16px; padding: 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); font-size: 12px; text-align: left; line-height: 1.4;"></div>
+
+        <div id="successBox" class="hidden" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+          <p style="font-size: 13px; color: var(--accent-green); font-weight: 600; margin-bottom: 16px;">Pass successfully issued!</p>
+          <div id="passActions" style="display: flex; flex-direction: column; gap: 12px; align-items: center;">
+            <!-- Render Apple Wallet pass button -->
+          </div>
+        </div>
+      </div>
+    </main>
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+
+  <script>
+    document.getElementById('passForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const memberId = document.getElementById('memberId').value;
+      const lastName = document.getElementById('lastName').value;
+      const errorMsg = document.getElementById('errorMsg');
+      const successBox = document.getElementById('successBox');
+      const passActions = document.getElementById('passActions');
+
+      errorMsg.classList.add('hidden');
+      successBox.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/member/issue-pass', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId, lastName })
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          successBox.classList.remove('hidden');
+          
+          passActions.innerHTML = `
+            <a href="${data.walletUrl}" class="wallet-btn apple-wallet" style="width: 100%; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 8px; height: 48px; border-radius: 8px; font-weight: bold; background: #000000; border: 1px solid #ffffff; color: #ffffff;">
+              🎫 Add to Phone Wallet
+            </a>
+            <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary); word-break: break-all; text-align: center; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px;">
+              Locker Token Code:<br>
+              <strong style="color: var(--accent-cyan); font-family: monospace; font-size: 13px;">${data.locker_token}</strong>
+            </div>
+          `;
+          
+          // Redirect the member to PassKit's unified download page immediately
+          setTimeout(() => {
+            window.location.href = data.walletUrl;
+          }, 800);
+        } else {
+          errorMsg.textContent = data.message || 'Pass issuance failed.';
+          errorMsg.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorMsg.textContent = 'Server connection error.';
+        errorMsg.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

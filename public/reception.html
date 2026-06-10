@@ -140,6 +140,31 @@
       </div>
     </div>
 
+    <!-- Bypass Token Modal -->
+    <div class="modal-overlay hidden" id="bypass-modal">
+      <div class="glass-card modal-content">
+        <div class="modal-header">
+          <h3>Bypass Override Code</h3>
+          <button class="close-modal-btn" id="close-bypass-btn">✕</button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+          <p class="modal-instruction">Provide this 6-digit code to the member. It allows a one-time locker unlock bypass if GPS is disabled:</p>
+          
+          <div style="font-size: 36px; font-weight: 800; color: var(--accent-cyan); letter-spacing: 0.1em; margin: 24px 0; font-family: monospace;">
+            <span id="bypass-code-display">------</span>
+          </div>
+
+          <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+            Token expires in: <strong style="color: var(--accent-red);" id="bypass-timer-display">60s</strong>
+          </div>
+
+          <div class="modal-actions">
+            <button class="submit-btn" id="close-bypass-confirm-btn" style="width: 100%;">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- PIN Entry Overlay (Initial Security Gate) -->
     <div class="modal-overlay" id="pin-overlay">
       <div class="glass-card pin-card">
@@ -314,8 +339,19 @@
 
           subActionGroup.appendChild(releaseBtn);
           subActionGroup.appendChild(viewPassBtn);
+
+          const overrideBtn = document.createElement('button');
+          overrideBtn.className = 'grid-action-btn view-pass';
+          overrideBtn.style.marginTop = '4px';
+          overrideBtn.style.background = 'rgba(0, 240, 255, 0.1)';
+          overrideBtn.style.borderColor = 'rgba(0, 240, 255, 0.3)';
+          overrideBtn.style.color = 'var(--accent-cyan)';
+          overrideBtn.innerText = '🔑 Bypass Code';
+          overrideBtn.onclick = () => generateBypassCode(locker.id);
+
           actionGroup.appendChild(unlockBtn);
           actionGroup.appendChild(subActionGroup);
+          actionGroup.appendChild(overrideBtn);
           lockerAction.appendChild(actionGroup);
         }
 
@@ -536,6 +572,52 @@
         showToast(data.message || 'Failed to save configurations.', 'error');
       }
     });
+
+    // Bypass Override Token Logic
+    const bypassModal = document.getElementById('bypass-modal');
+    const closeBypassBtn = document.getElementById('close-bypass-btn');
+    const closeBypassConfirmBtn = document.getElementById('close-bypass-confirm-btn');
+    const bypassCodeDisplay = document.getElementById('bypass-code-display');
+    const bypassTimerDisplay = document.getElementById('bypass-timer-display');
+    let bypassCountdownInterval = null;
+
+    async function generateBypassCode(lockerId) {
+      const res = await adminFetch('/api/reception/generate-override', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockerId })
+      });
+      if (!res) return;
+      const data = await res.json();
+      if (res.ok && data.success) {
+        bypassCodeDisplay.innerText = data.code;
+        bypassModal.classList.remove('hidden');
+        
+        let secondsLeft = 60;
+        bypassTimerDisplay.innerText = `${secondsLeft}s`;
+        
+        if (bypassCountdownInterval) clearInterval(bypassCountdownInterval);
+        bypassCountdownInterval = setInterval(() => {
+          secondsLeft--;
+          bypassTimerDisplay.innerText = `${secondsLeft}s`;
+          if (secondsLeft <= 0) {
+            clearInterval(bypassCountdownInterval);
+            bypassModal.classList.add('hidden');
+            showToast(`Bypass token for locker #${lockerId} has expired.`, 'info');
+          }
+        }, 1000);
+      } else {
+        showToast(data.message || 'Failed to generate bypass code.', 'error');
+      }
+    }
+
+    function closeBypassModal() {
+      bypassModal.classList.add('hidden');
+      if (bypassCountdownInterval) clearInterval(bypassCountdownInterval);
+    }
+
+    closeBypassBtn.addEventListener('click', closeBypassModal);
+    closeBypassConfirmBtn.addEventListener('click', closeBypassModal);
   </script>
 </body>
 </html>

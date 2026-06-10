@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inzan Athletics - Locker Terminal Kiosk</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #030303;
+      overflow: hidden;
+      user-select: none;
+    }
+    .kiosk-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      padding: 24px;
+    }
+    .mode-selector {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .mode-btn {
+      flex: 1;
+      height: 70px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-secondary);
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+    .mode-btn.active {
+      background: var(--accent-white);
+      color: #000000;
+      border-color: var(--accent-white);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+    }
+    .mode-btn.vacate-active.active {
+      background: var(--accent-red);
+      color: #ffffff;
+      border-color: var(--accent-red);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+    }
+    .scan-status-card {
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .scanner-aim {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      color: rgba(255, 255, 255, 0.2);
+      animation: aim-float 3s ease-in-out infinite;
+    }
+    @keyframes aim-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .scanner-laser {
+      position: absolute;
+      left: 10%; right: 10%;
+      height: 2px;
+      background: var(--accent-red);
+      box-shadow: 0 0 8px var(--accent-red);
+      animation: laser-scan 2s linear infinite;
+    }
+    @keyframes laser-scan {
+      0%, 100% { top: 20%; opacity: 0.3; }
+      50% { top: 80%; opacity: 1; }
+    }
+    .scanner-laser.laser-vacate {
+      background: var(--accent-orange);
+      box-shadow: 0 0 8px var(--accent-orange);
+    }
+    .status-large-icon {
+      font-size: 80px;
+      animation: icon-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes icon-pop {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    /* Hidden barcode reader input */
+    .scanner-hidden-input {
+      position: absolute;
+      top: -100px;
+      opacity: 0;
+    }
+    .kiosk-footer {
+      font-size: 12px;
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <div class="kiosk-container">
+    <!-- Header -->
+    <header class="header" style="justify-content: center; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+      <div class="logo-container">
+        <div class="gym-pfp">
+          <img src="/images/logo.png" alt="Inzan Athletics Logo" class="gym-pfp-img">
+        </div>
+        <div class="brand-text-wrapper" style="text-align: left;">
+          <span class="logo-text-primary">I N Z Λ N</span>
+          <span class="logo-text-sub">LOCKER TERMINAL</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mode Selector Controls -->
+    <div style="text-align: left;">
+      <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.1em; margin-bottom: 8px; padding-left: 4px;">
+        Select Terminal Operation:
+      </div>
+      <div class="mode-selector">
+        <button class="mode-btn active" id="btn-mode-open">
+          <span>🔓</span> Open Locker
+        </button>
+        <button class="mode-btn" id="btn-mode-vacate">
+          <span>🎒</span> Vacate Locker
+        </button>
+      </div>
+    </div>
+
+    <!-- Scanner Target and Feedback Card -->
+    <div class="glass-card scan-status-card" id="kiosk-card">
+      <div id="state-scanning" class="scan-status-card" style="width: 100%;">
+        <div class="scanner-aim" id="scanner-aim-box">
+          📱
+          <div class="scanner-laser" id="scanner-laser-bar"></div>
+        </div>
+        <div>
+          <h2 style="font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;" id="kiosk-prompt-title">Scan Phone Pass</h2>
+          <p style="font-size: 13px; color: var(--text-secondary);" id="kiosk-prompt-sub">Hold your smartphone wallet barcode under the scanner lens</p>
+        </div>
+      </div>
+
+      <div id="state-feedback" class="scan-status-card hidden" style="width: 100%;">
+        <div class="status-large-icon" id="feedback-icon">✅</div>
+        <div>
+          <h2 style="font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;" id="feedback-title">Success</h2>
+          <p style="font-size: 15px; color: var(--text-secondary);" id="feedback-message">Locker assigned successfully.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="kiosk-footer">
+      Terminal connected locally. Automatic calibration active.
+    </div>
+
+    <!-- Hidden Input for Scanner Data -->
+    <input type="text" id="scanner-input" class="scanner-hidden-input" autocomplete="off" autofocus>
+  </div>
+
+  <script>
+    // State
+    const state = {
+      mode: 'open' // 'open' or 'vacate'
+    };
+
+    // DOM Elements
+    const btnModeOpen = document.getElementById('btn-mode-open');
+    const btnModeVacate = document.getElementById('btn-mode-vacate');
+    const stateScanning = document.getElementById('state-scanning');
+    const stateFeedback = document.getElementById('state-feedback');
+    const kioskCard = document.getElementById('kiosk-card');
+    const scannerAimBox = document.getElementById('scanner-aim-box');
+    const scannerLaserBar = document.getElementById('scanner-laser-bar');
+    const kioskPromptTitle = document.getElementById('kiosk-prompt-title');
+    const kioskPromptSub = document.getElementById('kiosk-prompt-sub');
+    
+    const feedbackIcon = document.getElementById('feedback-icon');
+    const feedbackTitle = document.getElementById('feedback-title');
+    const feedbackMessage = document.getElementById('feedback-message');
+    const scannerInput = document.getElementById('scanner-input');
+
+    // Keep hidden input strictly focused to capture scanner reads
+    function focusScanner() {
+      scannerInput.focus();
+    }
+    
+    // Auto refocus loop
+    focusScanner();
+    document.addEventListener('click', focusScanner);
+    setInterval(focusScanner, 500);
+
+    // Mode Toggle Logic
+    btnModeOpen.addEventListener('click', () => {
+      state.mode = 'open';
+      btnModeOpen.className = 'mode-btn active';
+      btnModeVacate.className = 'mode-btn';
+      scannerLaserBar.className = 'scanner-laser';
+      scannerAimBox.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      kioskPromptTitle.innerText = 'Scan Phone Pass';
+      kioskPromptSub.innerText = 'Hold your smartphone wallet barcode under the scanner lens';
+      focusScanner();
+    });
+
+    btnModeVacate.addEventListener('click', () => {
+      state.mode = 'vacate';
+      btnModeOpen.className = 'mode-btn';
+      btnModeVacate.className = 'mode-btn active vacate-active';
+      scannerLaserBar.className = 'scanner-laser laser-vacate';
+      scannerAimBox.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+      kioskPromptTitle.innerText = 'Scan to Vacate Locker';
+      kioskPromptSub.innerText = 'Hold your pass under the lens to release your locker and end session';
+      focusScanner();
+    });
+
+    // Handle scanner input read
+    scannerInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter') {
+        const token = scannerInput.value.trim();
+        scannerInput.value = ''; // clear input immediately
+        if (!token) return;
+
+        console.log(`Scanner Read: ${token} (Mode: ${state.mode})`);
+        
+        // Basic format check
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(token)) {
+          showFeedback(false, 'Scan Failed', 'Invalid ticket barcode format scanned. Please use your official Inzan Athletics wallet pass.');
+          return;
+        }
+
+        // Send API call based on mode
+        if (state.mode === 'open') {
+          await processOpen(token);
+        } else {
+          await processVacate(token);
+        }
+      }
+    });
+
+    async function processOpen(token) {
+      try {
+        const res = await fetch('/api/terminal/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locker_token: token })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          const actionText = data.action === 'allocate' ? 'ALLOCATED & OPENED' : 'UNLOCKED';
+          showFeedback(
+            true, 
+            `Locker #${data.locker_id}`, 
+            `Successfully ${actionText}. Go to locker number #${data.locker_id}.`
+          );
+        } else {
+          showFeedback(false, 'Access Denied', data.message || 'Locker allocation/unlock failed.');
+        }
+      } catch (err) {
+        showFeedback(false, 'System Error', 'Could not establish connection to the gym server.');
+      }
+    }
+
+    async function processVacate(token) {
+      try {
+        const res = await fetch('/api/terminal/vacate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locker_token: token })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showFeedback(
+            true, 
+            'Locker Vacated', 
+            data.message || 'Locker released successfully. Thank you for your workout!'
+          );
+        } else {
+          showFeedback(false, 'Vacate Failed', data.message || 'Failed to release locker.');
+        }
+      } catch (err) {
+        showFeedback(false, 'System Error', 'Could not establish connection to the gym server.');
+      }
+    }
+
+    // Display Feedback Layout
+    function showFeedback(success, title, msg) {
+      stateScanning.classList.add('hidden');
+      stateFeedback.classList.remove('hidden');
+
+      if (success) {
+        kioskCard.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        feedbackIcon.innerText = '✅';
+        feedbackTitle.innerText = title;
+        feedbackTitle.style.color = 'var(--accent-green)';
+        feedbackMessage.innerText = msg;
+      } else {
+        kioskCard.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        feedbackIcon.innerText = '❌';
+        feedbackTitle.innerText = title;
+        feedbackTitle.style.color = 'var(--accent-red)';
+        feedbackMessage.innerText = msg;
+      }
+
+      // Reset to scanning state after 3 seconds
+      setTimeout(() => {
+        stateFeedback.classList.add('hidden');
+        stateScanning.classList.remove('hidden');
+        kioskCard.style.borderColor = 'var(--border-color)';
+        
+        // Reset to Open mode automatically if we just vacated
+        if (state.mode === 'vacate') {
+          btnModeOpen.click();
+        }
+        
+        focusScanner();
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

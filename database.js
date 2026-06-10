@@ -77,6 +77,38 @@ function createTablesAndSeed() {
     )
   `, (err) => {
     if (err) console.error('Error creating settings table:', err.message);
+  });
+
+  // 4. Create Members Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS members (
+      id TEXT PRIMARY KEY,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      gender TEXT NOT NULL CHECK(gender IN ('male', 'female')),
+      status TEXT NOT NULL DEFAULT 'active'
+    )
+  `, (err) => {
+    if (err) console.error('Error creating members table:', err.message);
+    else seedMembers();
+  });
+
+  // 5. Create Locker Assignments Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS locker_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_id TEXT NOT NULL,
+      locker_id TEXT,
+      locker_token TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL CHECK(status IN ('issued', 'allocated', 'vacated', 'expired')),
+      issued_at INTEGER NOT NULL,
+      assigned_at INTEGER,
+      vacated_at INTEGER,
+      FOREIGN KEY (member_id) REFERENCES members(id),
+      FOREIGN KEY (locker_id) REFERENCES lockers(id)
+    )
+  `, (err) => {
+    if (err) console.error('Error creating locker_assignments table:', err.message);
     resolveDbReady(); // Resolve once initialization is complete
   });
 }
@@ -109,6 +141,23 @@ function seedLockers() {
       } catch (e) {
         console.error('Failed to read or parse lockers_config.json:', e.message);
       }
+    }
+  });
+}
+
+function seedMembers() {
+  db.get('SELECT COUNT(*) as count FROM members', [], (err, row) => {
+    if (err) return;
+    if (row.count === 0) {
+      console.log('Seeding mock members into SQLite database...');
+      const insertStmt = db.prepare('INSERT INTO members (id, first_name, last_name, gender, status) VALUES (?, ?, ?, ?, ?)');
+      insertStmt.run(['MEM-001', 'John', 'Smith', 'male', 'active']);
+      insertStmt.run(['MEM-002', 'Jane', 'Doe', 'female', 'active']);
+      insertStmt.run(['MEM-003', 'Bob', 'Johnson', 'male', 'inactive']);
+      insertStmt.finalize((err) => {
+        if (err) console.error('Failed to seed members:', err.message);
+        else console.log('Successfully seeded members.');
+      });
     }
   });
 }
