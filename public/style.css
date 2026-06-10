@@ -1296,7 +1296,7 @@ body::before {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 @media (max-height: 680px) {
