@@ -11,6 +11,38 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Syncopate:wght@700&display=swap" rel="stylesheet">
 </head>
 <body class="admin-body">
+  <!-- Premium Preloader -->
+  <div id="preloader">
+    <div class="preloader-content">
+      <div class="preloader-logo">
+        <svg viewBox="0 0 336 40" class="inzan-logo-svg">
+          <path class="letter-i" d="M 15 0 L 15 40" />
+          <path class="letter-n1" d="M 54 40 L 54 0 L 84 40 L 84 0" />
+          <path class="letter-z" d="M 138 0 L 168 0 L 138 40 L 168 40" />
+          <path class="letter-l" d="M 222 40 L 237 0 L 252 40" />
+          <path class="letter-n2" d="M 306 40 L 306 0 L 336 40 L 336 0" />
+        </svg>
+      </div>
+      <div class="preloader-loader-bar">
+        <div class="preloader-loader-progress"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('load', () => {
+      const preloader = document.getElementById('preloader');
+      if (preloader) {
+        const minPlayTime = 1600;
+        const timeElapsed = performance.now();
+        const remainingTime = Math.max(0, minPlayTime - timeElapsed);
+        setTimeout(() => {
+          preloader.classList.add('fade-out');
+          setTimeout(() => preloader.remove(), 600);
+        }, remainingTime);
+      }
+    });
+  </script>
+
   <div class="app-container admin-container">
     <!-- Header -->
     <header class="header">
@@ -24,7 +56,13 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="settings-toggle-btn hidden" id="settings-toggle-btn">⚙️ System Settings</button>
+        <button class="settings-toggle-btn hidden" id="settings-toggle-btn" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          System Settings
+        </button>
         <div class="system-status">
           <span class="status-indicator online"></span>
           <span class="status-text">Desk Console</span>
@@ -52,7 +90,12 @@
       <div class="glass-card modal-content">
         <div class="modal-header">
           <h3>Locker Assigned Successfully!</h3>
-          <button class="close-modal-btn" id="close-modal-btn">✕</button>
+          <button class="close-modal-btn" id="close-modal-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         <div class="modal-body">
           <p class="modal-instruction">Point the client's phone camera at this QR code to download their Apple Wallet pass instantly:</p>
@@ -72,7 +115,10 @@
 
           <div class="modal-actions">
             <a href="#" class="wallet-btn apple-wallet" id="modal-download-link" download>
-              <span class="wallet-icon"></span> Add to Apple Wallet
+              <svg class="apple-logo-svg" viewBox="0 0 170 170" width="14" height="14" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
+                <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.92-14.37-6.15-2.73-2.22-6.5-6.7-11.3-13.43-5.91-8.3-10.74-17.75-14.48-28.37-3.74-10.61-5.63-20.94-5.63-30.98 0-14.9 3.93-27.14 11.79-36.7 7.86-9.57 17.65-14.37 29.37-14.42 6.06 0 12.1 1.77 18.12 5.3 6.02 3.53 10.23 5.3 12.63 5.3 2.1 0 6.07-1.63 11.92-4.89 5.85-3.27 11.66-4.83 17.44-4.7 14.8.25 26.28 5.76 34.42 16.53-12.14 7.36-18.12 17.22-17.94 29.57.19 9.8 3.82 17.89 10.9 24.26 7.07 6.38 15.35 9.87 24.84 10.49-2.07 6.13-4.56 12.23-7.48 18.28zM119.22 32.4c0-7.72 2.76-14.88 8.28-21.49 5.51-6.61 12.43-10.63 20.74-11.06.12.85.19 1.83.19 2.94 0 7.42-2.82 14.4-8.48 20.93-5.65 6.54-12.67 10.65-21.05 10.35-.12-.57-.18-1.12-.18-1.67z"/>
+              </svg>
+              Add to Apple Wallet
             </a>
           </div>
         </div>
@@ -83,8 +129,19 @@
     <div class="modal-overlay hidden" id="settings-modal">
       <div class="glass-card modal-content settings-modal-content">
         <div class="modal-header">
-          <h3>⚙️ System Configuration</h3>
-          <button class="close-modal-btn" id="close-settings-btn">✕</button>
+          <h3 style="display: flex; align-items: center; gap: 8px;">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            System Configuration
+          </h3>
+          <button class="close-modal-btn" id="close-settings-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         <div class="modal-body">
           <form id="settings-form" class="settings-form">
@@ -145,7 +202,12 @@
       <div class="glass-card modal-content">
         <div class="modal-header">
           <h3>Bypass Override Code</h3>
-          <button class="close-modal-btn" id="close-bypass-btn">✕</button>
+          <button class="close-modal-btn" id="close-bypass-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         <div class="modal-body" style="text-align: center;">
           <p class="modal-instruction">Provide this 6-digit code to the member. It allows a one-time locker unlock bypass if GPS is disabled:</p>
@@ -283,7 +345,14 @@
           const maintBtn = document.createElement('button');
           maintBtn.className = 'grid-action-btn view-pass';
           maintBtn.style.flex = '1';
-          maintBtn.innerText = '🛠️';
+          maintBtn.style.display = 'flex';
+          maintBtn.style.alignItems = 'center';
+          maintBtn.style.justifyContent = 'center';
+          maintBtn.innerHTML = `
+            <svg class="icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+          `;
           maintBtn.title = 'Put in Maintenance';
           maintBtn.onclick = () => toggleMaintenance(locker.id, true);
 
@@ -299,7 +368,16 @@
 
           const maintenanceText = document.createElement('span');
           maintenanceText.className = 'grid-maintenance-text';
-          maintenanceText.innerText = '🛠️ MAINTENANCE';
+          maintenanceText.style.display = 'inline-flex';
+          maintenanceText.style.alignItems = 'center';
+          maintenanceText.style.justifyContent = 'center';
+          maintenanceText.style.gap = '6px';
+          maintenanceText.innerHTML = `
+            <svg class="icon" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #f59e0b;">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+            MAINTENANCE
+          `;
 
           const activateBtn = document.createElement('button');
           activateBtn.className = 'grid-action-btn assign';
@@ -318,7 +396,15 @@
 
           const unlockBtn = document.createElement('button');
           unlockBtn.className = 'grid-action-btn assign';
-          unlockBtn.innerText = '🔓 Unlock';
+          unlockBtn.innerHTML = `
+            <span style="display: inline-flex; align-items: center; gap: 6px; justify-content: center; width: 100%;">
+              <svg class="icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="stroke: #000000;">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+              </svg>
+              Unlock
+            </span>
+          `;
           unlockBtn.onclick = () => unlockLockerAdmin(locker.id);
 
           const subActionGroup = document.createElement('div');
@@ -346,7 +432,14 @@
           overrideBtn.style.background = 'rgba(0, 240, 255, 0.1)';
           overrideBtn.style.borderColor = 'rgba(0, 240, 255, 0.3)';
           overrideBtn.style.color = 'var(--accent-cyan)';
-          overrideBtn.innerText = '🔑 Bypass Code';
+          overrideBtn.innerHTML = `
+            <span style="display: inline-flex; align-items: center; gap: 6px; justify-content: center; width: 100%;">
+              <svg class="icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+              </svg>
+              Bypass Code
+            </span>
+          `;
           overrideBtn.onclick = () => generateBypassCode(locker.id);
 
           actionGroup.appendChild(unlockBtn);

@@ -16,6 +16,38 @@
   <script src="https://unpkg.com/html5-qrcode" defer></script>
 </head>
 <body>
+  <!-- Premium Preloader -->
+  <div id="preloader">
+    <div class="preloader-content">
+      <div class="preloader-logo">
+        <svg viewBox="0 0 336 40" class="inzan-logo-svg">
+          <path class="letter-i" d="M 15 0 L 15 40" />
+          <path class="letter-n1" d="M 54 40 L 54 0 L 84 40 L 84 0" />
+          <path class="letter-z" d="M 138 0 L 168 0 L 138 40 L 168 40" />
+          <path class="letter-l" d="M 222 40 L 237 0 L 252 40" />
+          <path class="letter-n2" d="M 306 40 L 306 0 L 336 40 L 336 0" />
+        </svg>
+      </div>
+      <div class="preloader-loader-bar">
+        <div class="preloader-loader-progress"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('load', () => {
+      const preloader = document.getElementById('preloader');
+      if (preloader) {
+        const minPlayTime = 1600;
+        const timeElapsed = performance.now();
+        const remainingTime = Math.max(0, minPlayTime - timeElapsed);
+        setTimeout(() => {
+          preloader.classList.add('fade-out');
+          setTimeout(() => preloader.remove(), 600);
+        }, remainingTime);
+      }
+    });
+  </script>
+
   <div class="app-container pwa-mobile-container">
     <!-- Header -->
     <header class="header">
@@ -40,17 +72,37 @@
       <!-- SELF-SERVICE LOCKER SELECTION CARD (Shown when no token is present) -->
       <div class="glass-card self-service-card" id="access-error-card">
         <div id="self-service-selection">
-          <div class="error-icon">🥋</div>
+          <div class="error-icon" style="display: flex; justify-content: center; margin-bottom: 16px;">
+            <svg class="icon" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-white);">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <path d="M10 6h4"></path>
+              <path d="M10 10h4"></path>
+              <circle cx="12" cy="16" r="1.5"></circle>
+              <path d="M12 17.5V20"></path>
+            </svg>
+          </div>
           <h2>Self-Service Locker</h2>
           <p class="self-service-subtitle">Tap your category to automatically assign yourself a locker:</p>
           
           <div class="gender-selection-container">
             <button class="gender-btn male" id="btn-select-male">
-              <span class="gender-icon">♂️</span>
+              <span class="gender-icon" style="display: flex; align-items: center; justify-content: center;">
+                <svg class="icon gender-svg" viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="10" cy="14" r="6"></circle>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="15" y1="9" x2="21" y2="3"></line>
+                </svg>
+              </span>
               <span class="gender-label">Male</span>
             </button>
             <button class="gender-btn female" id="btn-select-female">
-              <span class="gender-icon">♀️</span>
+              <span class="gender-icon" style="display: flex; align-items: center; justify-content: center;">
+                <svg class="icon gender-svg" viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="9" r="6"></circle>
+                  <line x1="12" y1="15" x2="12" y2="21"></line>
+                  <line x1="9" y1="18" x2="15" y2="18"></line>
+                </svg>
+              </span>
               <span class="gender-label">Female</span>
             </button>
           </div>
@@ -62,7 +114,14 @@
           </div>
 
           <button class="scan-btn-secondary" id="start-scan-btn">
-            📷 Scan Physical QR Code
+            <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <rect x="7" y="7" width="3" height="3"></rect>
+              <rect x="14" y="7" width="3" height="3"></rect>
+              <rect x="7" y="14" width="3" height="3"></rect>
+              <path d="M14 14h3v3h-3z"></path>
+            </svg>
+            Scan Physical QR Code
           </button>
         </div>
 
@@ -84,7 +143,12 @@
             <span class="org-label">GYM MEMBER ACCESS</span>
             <span class="gym-name">Inzan Athletics</span>
           </div>
-          <div class="pass-icon">🔓</div>
+          <div class="pass-icon" style="display: flex; align-items: center; justify-content: center; width: 38px; height: 38px;">
+            <svg class="icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-primary);">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+            </svg>
+          </div>
         </div>
 
         <!-- Pass Locker Stats -->
@@ -127,15 +191,29 @@
           
           <div class="wallet-actions">
             <button class="wallet-btn apple-wallet" id="apple-wallet-btn">
-              <span class="wallet-icon"></span> Add to Apple Wallet
+              <svg class="apple-logo-svg" viewBox="0 0 170 170" width="14" height="14" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
+                <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.92-14.37-6.15-2.73-2.22-6.5-6.7-11.3-13.43-5.91-8.3-10.74-17.75-14.48-28.37-3.74-10.61-5.63-20.94-5.63-30.98 0-14.9 3.93-27.14 11.79-36.7 7.86-9.57 17.65-14.37 29.37-14.42 6.06 0 12.1 1.77 18.12 5.3 6.02 3.53 10.23 5.3 12.63 5.3 2.1 0 6.07-1.63 11.92-4.89 5.85-3.27 11.66-4.83 17.44-4.7 14.8.25 26.28 5.76 34.42 16.53-12.14 7.36-18.12 17.22-17.94 29.57.19 9.8 3.82 17.89 10.9 24.26 7.07 6.38 15.35 9.87 24.84 10.49-2.07 6.13-4.56 12.23-7.48 18.28zM119.22 32.4c0-7.72 2.76-14.88 8.28-21.49 5.51-6.61 12.43-10.63 20.74-11.06.12.85.19 1.83.19 2.94 0 7.42-2.82 14.4-8.48 20.93-5.65 6.54-12.67 10.65-21.05 10.35-.12-.57-.18-1.12-.18-1.67z"/>
+              </svg>
+              Add to Apple Wallet
             </button>
             <button class="wallet-btn generic-wallet" id="generic-wallet-btn">
-              🎫 Pass Details
+              <svg class="icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="4"></line>
+                <line x1="8" y1="2" x2="8" y2="4"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              Pass Details
             </button>
           </div>
 
           <button class="wallet-btn release-session" id="client-release-btn" style="margin-top: 10px; width: 100%; border-color: rgba(239, 68, 68, 0.2); color: #f87171; background: rgba(239, 68, 68, 0.05); transition: all 0.2s ease;">
-            🔄 Finish Session & Free Locker
+            <svg class="icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Finish Session & Free Locker
           </button>
         </div>
       </div>
@@ -146,7 +224,12 @@
       <div class="glass-card scanner-modal-content">
         <div class="modal-header">
           <h3>Scan Assignment QR</h3>
-          <button class="close-modal-btn" id="close-scanner-btn">✕</button>
+          <button class="close-modal-btn" id="close-scanner-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         <div class="scanner-body">
           <p class="modal-instruction">Center the QR code shown at the reception desk in the camera view below:</p>

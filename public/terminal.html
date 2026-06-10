@@ -126,6 +126,38 @@
   </style>
 </head>
 <body>
+  <!-- Premium Preloader -->
+  <div id="preloader">
+    <div class="preloader-content">
+      <div class="preloader-logo">
+        <svg viewBox="0 0 336 40" class="inzan-logo-svg">
+          <path class="letter-i" d="M 15 0 L 15 40" />
+          <path class="letter-n1" d="M 54 40 L 54 0 L 84 40 L 84 0" />
+          <path class="letter-z" d="M 138 0 L 168 0 L 138 40 L 168 40" />
+          <path class="letter-l" d="M 222 40 L 237 0 L 252 40" />
+          <path class="letter-n2" d="M 306 40 L 306 0 L 336 40 L 336 0" />
+        </svg>
+      </div>
+      <div class="preloader-loader-bar">
+        <div class="preloader-loader-progress"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('load', () => {
+      const preloader = document.getElementById('preloader');
+      if (preloader) {
+        const minPlayTime = 1600;
+        const timeElapsed = performance.now();
+        const remainingTime = Math.max(0, minPlayTime - timeElapsed);
+        setTimeout(() => {
+          preloader.classList.add('fade-out');
+          setTimeout(() => preloader.remove(), 600);
+        }, remainingTime);
+      }
+    });
+  </script>
+
   <div class="kiosk-container">
     <!-- Header -->
     <header class="header" style="justify-content: center; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
@@ -147,10 +179,19 @@
       </div>
       <div class="mode-selector">
         <button class="mode-btn active" id="btn-mode-open">
-          <span>🔓</span> Open Locker
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+          </svg>
+          Open Locker
         </button>
         <button class="mode-btn" id="btn-mode-vacate">
-          <span>🎒</span> Vacate Locker
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Vacate Locker
         </button>
       </div>
     </div>
@@ -158,8 +199,12 @@
     <!-- Scanner Target and Feedback Card -->
     <div class="glass-card scan-status-card" id="kiosk-card">
       <div id="state-scanning" class="scan-status-card" style="width: 100%;">
-        <div class="scanner-aim" id="scanner-aim-box">
-          📱
+        <div class="scanner-aim" id="scanner-aim-box" style="display: flex; align-items: center; justify-content: center;">
+          <svg class="icon scanner-aim-phone-svg" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: rgba(255, 255, 255, 0.25);">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            <line x1="10" y1="6" x2="14" y2="6"></line>
+          </svg>
           <div class="scanner-laser" id="scanner-laser-bar"></div>
         </div>
         <div>
@@ -169,7 +214,7 @@
       </div>
 
       <div id="state-feedback" class="scan-status-card hidden" style="width: 100%;">
-        <div class="status-large-icon" id="feedback-icon">✅</div>
+        <div class="status-large-icon" id="feedback-icon" style="display: flex; align-items: center; justify-content: center; height: 80px;"></div>
         <div>
           <h2 style="font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;" id="feedback-title">Success</h2>
           <p style="font-size: 15px; color: var(--text-secondary);" id="feedback-message">Locker assigned successfully.</p>
@@ -319,13 +364,24 @@
 
       if (success) {
         kioskCard.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-        feedbackIcon.innerText = '✅';
+        feedbackIcon.innerHTML = `
+          <svg class="icon success-icon" viewBox="0 0 24 24" width="80" height="80" stroke="var(--accent-green)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M 8 12 L 11 15 L 16 9"></path>
+          </svg>
+        `;
         feedbackTitle.innerText = title;
         feedbackTitle.style.color = 'var(--accent-green)';
         feedbackMessage.innerText = msg;
       } else {
         kioskCard.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-        feedbackIcon.innerText = '❌';
+        feedbackIcon.innerHTML = `
+          <svg class="icon error-icon-svg" viewBox="0 0 24 24" width="80" height="80" stroke="var(--accent-red)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        `;
         feedbackTitle.innerText = title;
         feedbackTitle.style.color = 'var(--accent-red)';
         feedbackMessage.innerText = msg;
