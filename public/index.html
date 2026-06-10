@@ -69,9 +69,16 @@
     <!-- Main Card Content -->
     <main class="pass-wrapper" id="main-pass-screen">
       
-      <!-- SELF-SERVICE LOCKER SELECTION CARD (Shown when no token is present) -->
+      <!-- CONSOLIDATED ACCESS CARD (Shown when no token is present) -->
       <div class="glass-card self-service-card" id="access-error-card">
-        <div id="self-service-selection">
+        <!-- Tab Switcher Header -->
+        <div class="tabs-header">
+          <button class="tab-link active" id="tab-self-service">Self-Service</button>
+          <button class="tab-link" id="tab-member-portal">Member Pass</button>
+        </div>
+
+        <!-- Tab 1: Self-Service Content -->
+        <div id="self-service-tab-content" class="tab-content">
           <div class="error-icon" style="display: flex; justify-content: center; margin-bottom: 16px;">
             <svg class="icon" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-white);">
               <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
@@ -106,7 +113,46 @@
               <span class="gender-label">Female</span>
             </button>
           </div>
+        </div>
 
+        <!-- Tab 2: Member Portal / Credentials Form -->
+        <div id="member-portal-tab-content" class="tab-content hidden" style="padding: 0 10px;">
+          <div class="error-icon" style="display: flex; justify-content: center; margin-bottom: 16px;">
+            <svg class="icon" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-white);">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <polyline points="17 11 19 13 23 9"></polyline>
+            </svg>
+          </div>
+          <h2>Member Portal</h2>
+          <p class="self-service-subtitle" style="margin-bottom: 20px;">Enter credentials to unlock locker or generate your smartphone Wallet card:</p>
+
+          <form id="portalLoginForm" style="display: flex; flex-direction: column; gap: 16px; text-align: left; margin-bottom: 16px;">
+            <div class="form-field" style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">MEMBER ID</label>
+              <input type="text" id="portalMemberId" required placeholder="e.g. MEM-001" style="background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-primary); font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s ease;">
+            </div>
+            <div class="form-field" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px;">
+              <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">LAST NAME</label>
+              <input type="text" id="portalLastName" required placeholder="e.g. Smith" style="background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-primary); font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s ease;">
+            </div>
+
+            <button type="submit" class="submit-btn" id="portal-submit-btn" style="width: 100%; height: 48px; font-weight: 800; text-transform: uppercase; font-size: 13px; letter-spacing: 0.05em; display: flex; justify-content: center; align-items: center; border-radius: 12px; background: var(--accent-white); color: #000000; border: none; cursor: pointer;">
+              Submit
+            </button>
+          </form>
+
+          <!-- Onboarding success display -->
+          <div id="portalSuccessBox" class="hidden" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <p style="font-size: 13px; color: var(--accent-green); font-weight: 600; margin-bottom: 16px;">Pass successfully issued!</p>
+            <div id="portalPassActions" style="display: flex; flex-direction: column; gap: 12px; align-items: center; width: 100%;">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Shared Scan Ticket Section underneath the Tabs -->
+        <div id="shared-scan-section" style="width: 100%;">
           <div class="self-service-divider">
             <div class="divider-line"></div>
             <div class="divider-text">Or scan ticket</div>
@@ -181,6 +227,27 @@
               <circle class="path" cx="12" cy="12" r="10" fill="none" stroke-width="3"></circle>
             </svg>
           </button>
+        </div>
+
+        <!-- GPS Failure Fallback Form -->
+        <div class="fallback-box hidden" id="override-fallback-box" style="margin: 0 24px 20px 24px;">
+          <div class="fallback-title">
+            <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-orange);">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Geolocation Denied / Unavailable
+          </div>
+          <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px;">
+            If you cannot share your location, ask the front desk receptionist for a temporary 60-second override bypass code:
+          </p>
+          <div class="override-input-group">
+            <input type="text" id="override-token-input" class="override-input" placeholder="000000" maxlength="6">
+            <button class="submit-btn" id="override-submit-btn" style="height: 40px; padding: 0 16px;">
+              Submit
+            </button>
+          </div>
         </div>
 
         <!-- Pass Footer / Dynamic Card Action -->
@@ -270,13 +337,53 @@
     const closeScannerBtn = document.getElementById('close-scanner-btn');
     const scannerStatus = document.getElementById('scanner-status');
 
-    // Self-Service Elements
+    // Tab switcher elements
+    const tabSelfService = document.getElementById('tab-self-service');
+    const tabMemberPortal = document.getElementById('tab-member-portal');
+    const selfServiceTabContent = document.getElementById('self-service-tab-content');
+    const memberPortalTabContent = document.getElementById('member-portal-tab-content');
+    const sharedScanSection = document.getElementById('shared-scan-section');
+
+    // Self-Service / Onboarding Elements
     const btnSelectMale = document.getElementById('btn-select-male');
     const btnSelectFemale = document.getElementById('btn-select-female');
-    const selfServiceSelection = document.getElementById('self-service-selection');
     const selfServiceLoadingState = document.getElementById('self-service-loading-state');
     const selfServiceLoadingText = document.getElementById('self-service-loading-text');
     const clientReleaseBtn = document.getElementById('client-release-btn');
+
+    // Member Portal Elements
+    const portalLoginForm = document.getElementById('portalLoginForm');
+    const portalMemberId = document.getElementById('portalMemberId');
+    const portalLastName = document.getElementById('portalLastName');
+    const portalSuccessBox = document.getElementById('portalSuccessBox');
+    const portalPassActions = document.getElementById('portalPassActions');
+
+    // Override Fallback Elements
+    const overrideFallbackBox = document.getElementById('override-fallback-box');
+    const overrideTokenInput = document.getElementById('override-token-input');
+    const overrideSubmitBtn = document.getElementById('override-submit-btn');
+
+    // Helper functions to manage panel loading states
+    function showLoading(text) {
+      document.querySelector('.tabs-header').classList.add('hidden');
+      selfServiceTabContent.classList.add('hidden');
+      memberPortalTabContent.classList.add('hidden');
+      sharedScanSection.classList.add('hidden');
+      selfServiceLoadingState.classList.remove('hidden');
+      selfServiceLoadingText.innerText = text;
+    }
+
+    function hideLoading() {
+      document.querySelector('.tabs-header').classList.remove('hidden');
+      const activeTabId = document.querySelector('.tab-link.active').id;
+      if (activeTabId === 'tab-self-service') {
+        selfServiceTabContent.classList.remove('hidden');
+      } else {
+        memberPortalTabContent.classList.remove('hidden');
+      }
+      sharedScanSection.classList.remove('hidden');
+      selfServiceLoadingState.classList.add('hidden');
+    }
 
     // Notify Toast
     function showToast(message, type = 'info') {
@@ -347,6 +454,11 @@
       // Prioritize URL scan values
       checkUrlParams();
 
+      // Ensure override fallback is reset
+      if (overrideFallbackBox) {
+        overrideFallbackBox.classList.add('hidden');
+      }
+
       if (state.lockerId && state.token) {
         // Validate active locker state
         const isValid = await validateActiveLocker();
@@ -362,7 +474,7 @@
         }
       }
 
-      // No valid assignment -> show scan card
+      // No valid assignment -> show selection tabs
       passCard.classList.add('hidden');
       errorCard.classList.remove('hidden');
     }
@@ -374,7 +486,7 @@
       }
     }
 
-    // Unlock API Dispatch
+    // Unlock secure locker API dispatch
     async function unlockLocker() {
       if (!state.lockerId || !state.token || state.isUnlocking) return;
 
@@ -408,7 +520,7 @@
           lockBadge.innerText = 'DISPATCHING';
 
           try {
-            const response = await fetch('/api/unlock-locker', {
+            const response = await fetch('/api/member/unlock', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
@@ -437,6 +549,9 @@
                 state.isUnlocking = false;
               }, 5000);
             } else {
+              if (data.gpsError) {
+                overrideFallbackBox.classList.remove('hidden');
+              }
               throw new Error(data.message || 'Locker validation failed.');
             }
 
@@ -471,6 +586,10 @@
       lockBadge.className = 'lock-badge failed';
       btnText.innerText = 'Tap to Retry';
       showToast(msg, 'error');
+      
+      // Geofence coordinate failed -> show Front Desk override input
+      overrideFallbackBox.classList.remove('hidden');
+
       triggerHaptic([100, 50, 100]);
       setTimeout(() => {
         lockBadge.innerText = 'LOCKED';
@@ -603,6 +722,147 @@
       // Quiet fail to avoid spamming console during camera stream frames
     }
 
+    // Tab Switching Events
+    tabSelfService.addEventListener('click', () => {
+      tabSelfService.classList.add('active');
+      tabMemberPortal.classList.remove('active');
+      selfServiceTabContent.classList.remove('hidden');
+      memberPortalTabContent.classList.add('hidden');
+    });
+
+    tabMemberPortal.addEventListener('click', () => {
+      tabMemberPortal.classList.add('active');
+      tabSelfService.classList.remove('active');
+      memberPortalTabContent.classList.remove('hidden');
+      selfServiceTabContent.classList.add('hidden');
+    });
+
+    // Member Portal Form Submission logic
+    portalLoginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const memberId = portalMemberId.value.trim();
+      const lastName = portalLastName.value.trim();
+
+      portalSuccessBox.classList.add('hidden');
+      showLoading('Verifying active locker assignments...');
+
+      try {
+        // First try to check if they already have an active assignment
+        const resLogin = await fetch('/api/member/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId, lastName })
+        });
+        const dataLogin = await resLogin.json();
+
+        if (resLogin.ok && dataLogin.success) {
+          state.lockerId = dataLogin.lockerId;
+          state.token = dataLogin.token;
+
+          localStorage.setItem('lockerId', state.lockerId);
+          localStorage.setItem('token', state.token);
+
+          showToast('Active locker assignment verified!', 'success');
+          triggerHaptic(300);
+          hideLoading();
+          await initApp();
+        } else if (resLogin.status === 404) {
+          // No active assignment -> automatically issue a new pass
+          showLoading('No active locker found. Generating new Wallet pass...');
+          
+          const resIssue = await fetch('/api/member/issue-pass', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ memberId, lastName })
+          });
+          const dataIssue = await resIssue.json();
+
+          if (resIssue.ok && dataIssue.success) {
+            hideLoading();
+            portalSuccessBox.classList.remove('hidden');
+            
+            portalPassActions.innerHTML = `
+              <a href="${dataIssue.walletUrl}" class="wallet-btn apple-wallet" style="width: 100%; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 8px; height: 48px; border-radius: 8px; font-weight: bold; background: #000000; border: 1px solid #ffffff; color: #ffffff;">
+                <svg class="apple-logo-svg" viewBox="0 0 170 170" width="14" height="14" fill="currentColor" style="vertical-align: middle;">
+                  <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.92-14.37-6.15-2.73-2.22-6.5-6.7-11.3-13.43-5.91-8.3-10.74-17.75-14.48-28.37-3.74-10.61-5.63-20.94-5.63-30.98 0-14.9 3.93-27.14 11.79-36.7 7.86-9.57 17.65-14.37 29.37-14.42 6.06 0 12.1 1.77 18.12 5.3 6.02 3.53 10.23 5.3 12.63 5.3 2.1 0 6.07-1.63 11.92-4.89 5.85-3.27 11.66-4.83 17.44-4.7 14.8.25 26.28 5.76 34.42 16.53-12.14 7.36-18.12 17.22-17.94 29.57.19 9.8 3.82 17.89 10.9 24.26 7.07 6.38 15.35 9.87 24.84 10.49-2.07 6.13-4.56 12.23-7.48 18.28zM119.22 32.4c0-7.72 2.76-14.88 8.28-21.49 5.51-6.61 12.43-10.63 20.74-11.06.12.85.19 1.83.19 2.94 0 7.42-2.82 14.4-8.48 20.93-5.65 6.54-12.67 10.65-21.05 10.35-.12-.57-.18-1.12-.18-1.67z"/>
+                </svg>
+                Add to Phone Wallet
+              </a>
+              <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary); word-break: break-all; text-align: center; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; width: 100%;">
+                Locker Token Code:<br>
+                <strong style="color: #ffffff; font-family: monospace; font-size: 13px;">${dataIssue.locker_token}</strong>
+              </div>
+            `;
+            showToast('Pass successfully issued!', 'success');
+            triggerHaptic(300);
+
+            // Redirect the member to PassKit's unified download page immediately
+            setTimeout(() => {
+              window.location.href = dataIssue.walletUrl;
+            }, 800);
+          } else {
+            throw new Error(dataIssue.message || 'Pass generation failed.');
+          }
+        } else {
+          throw new Error(dataLogin.message || 'Login failed.');
+        }
+      } catch (err) {
+        console.error('Member portal action failed:', err);
+        showToast(err.message || 'Server connection error.', 'error');
+        triggerHaptic([100, 50, 100]);
+        hideLoading();
+      }
+    });
+
+    // Override Submit event listener
+    overrideSubmitBtn.addEventListener('click', async () => {
+      const code = overrideTokenInput.value.trim();
+      if (!code || code.length !== 6) {
+        showToast('Please enter a 6-digit code.', 'error');
+        return;
+      }
+
+      overrideSubmitBtn.disabled = true;
+      try {
+        const res = await fetch('/api/member/unlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lockerId: state.lockerId,
+            token: state.token,
+            overrideToken: code
+          })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          lockBadge.innerText = 'UNLOCKED';
+          lockBadge.className = 'lock-badge unlocked';
+          btnText.innerText = 'Locker Unlocked!';
+          showToast(data.message || `Locker #${state.lockerId} unlocked via Front Desk override code.`, 'success');
+          
+          overrideTokenInput.value = '';
+          overrideFallbackBox.classList.add('hidden');
+          
+          triggerHaptic(500);
+
+          setTimeout(() => {
+            lockBadge.innerText = 'LOCKED';
+            lockBadge.className = 'lock-badge locked';
+            btnText.innerText = `Tap to Unlock Locker #${state.lockerId}`;
+            unlockBtn.removeAttribute('disabled');
+            state.isUnlocking = false;
+          }, 5000);
+        } else {
+          showToast(data.message || 'Invalid or expired override code.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error.', 'error');
+      } finally {
+        overrideSubmitBtn.disabled = false;
+      }
+    });
+
     // Event Bindings
     unlockBtn.addEventListener('click', (e) => {
       const rect = unlockBtn.getBoundingClientRect();
@@ -626,9 +886,7 @@
 
     // Auto Assignment Event Bindings
     async function handleAutoAssignment(gender) {
-      selfServiceSelection.classList.add('hidden');
-      selfServiceLoadingState.classList.remove('hidden');
-      selfServiceLoadingText.innerText = `Assigning available ${gender === 'male' ? 'Male' : 'Female'} locker...`;
+      showLoading(`Assigning available ${gender === 'male' ? 'Male' : 'Female'} locker...`);
 
       triggerHaptic([50, 50]);
 
@@ -651,10 +909,7 @@
           showToast(`Locker #${state.lockerId} successfully assigned!`, 'success');
           triggerHaptic(300);
 
-          // Reset selection UI state
-          selfServiceSelection.classList.remove('hidden');
-          selfServiceLoadingState.classList.add('hidden');
-
+          hideLoading();
           await initApp();
         } else {
           throw new Error(data.message || 'Auto-assignment failed.');
@@ -663,10 +918,7 @@
         console.error('Auto-assign failed:', err);
         showToast(err.message || 'Server error during allocation.', 'error');
         triggerHaptic([100, 50, 100]);
-
-        // Revert UI to selection screen
-        selfServiceSelection.classList.remove('hidden');
-        selfServiceLoadingState.classList.add('hidden');
+        hideLoading();
       }
     }
 

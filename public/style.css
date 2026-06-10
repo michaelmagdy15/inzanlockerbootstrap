@@ -1488,3 +1488,94 @@ body::before {
   margin-right: 6px;
 }
 
+/* Tab Switcher Styling */
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+  gap: 8px;
+}
+
+.tab-link {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 4px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.tab-link:hover {
+  color: var(--text-primary);
+}
+
+.tab-link.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-white);
+}
+
+.tab-content {
+  animation: fade-in 0.35s ease;
+}
+
+.tab-content.hidden {
+  display: none !important;
+}
+
+/* Fallback override styles */
+.fallback-box {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.fallback-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-orange);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.override-input-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.override-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  color: #ffffff;
+  font-family: monospace;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: 0.25em;
+  font-weight: 800;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.override-input:focus {
+  border-color: var(--accent-white);
+}
+
+
